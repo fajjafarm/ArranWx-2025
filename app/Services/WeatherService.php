@@ -14,7 +14,7 @@ class WeatherService
         ]);
     }
 
-    // Weather data from Yr.no (for all locations)
+    // Weather data from Yr.no (for all locatiosns)
     public function getWeather($lat, $lon)
     {
         $url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={$lat}&lon={$lon}";
