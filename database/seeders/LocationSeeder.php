@@ -45,7 +45,7 @@ class LocationSeeder extends Seeder
             ['name' => 'Lochranza', 'latitude' => 55.7056, 'longitude' => -5.2958, 'altitude' => 0, 'type' => 'Marine'],
             ['name' => 'Troon Harbour', 'latitude' => 55.5436, 'longitude' => -4.6636, 'altitude' => 0, 'type' => 'Marine'],
             ['name' => 'Ardrossan Ardrossan', 'latitude' => 55.6392, 'longitude' => -4.8119, 'altitude' => 0, 'type' => 'Marine'],
-            ['name' => 'Claonaig Port', 'latitude' => 55.7667, 'longitude' => -5.3833, 'altitude' => 0, 'type' => 'Marine'] // Added
+            ['name' => 'Claonaig Port', 'latitude' => 55.7667, 'longitude' => -5.3833, 'altitude' => 0, 'type' => 'Marine'], // Added
         ];
 
         DB::table('locations')->insert($locations);
