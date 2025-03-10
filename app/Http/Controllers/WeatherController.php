@@ -1,4 +1,5 @@
-<?phpnamespace App\Http\Controllers;
+<?php
+namespace App\Http\Controllers;
 
 use App\Services\WeatherService;
 use App\Models\Location;
