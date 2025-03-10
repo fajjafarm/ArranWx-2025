@@ -34,7 +34,7 @@ class WeatherController extends Controller
                     'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
                     'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
                     'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                    'water_temperature' => $marineResponse['hourly']['water_temperature'][0] ?? null,
+                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
                 ];
             }
 
