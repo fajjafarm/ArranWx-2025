@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RoutingController;
+use App\Http\Controllers\WeatherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,14 +14,9 @@ use App\Http\Controllers\RoutingController;
 |
 */
 
-require __DIR__ . '/auth.php';
+// Main dashboard route
+Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
 
-Route::group(['prefix' => '/', 'middleware' => 'auth'], function () {
-    Route::get('', [RoutingController::class, 'index'])->name('root');
-    Route::get('/home', fn()=>view('dashboards.index'))->name('home');
-    Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])->name('third');
-    Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])->name('second');
-    Route::get('{any}', [RoutingController::class, 'root'])->name('any');
-});
-
-        
+// Optional future routes (commented out for now)
+// Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
+// Route::get('/marine/{name}', [WeatherController::class, 'marine'])->name('marine.show');
