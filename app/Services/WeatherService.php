@@ -25,7 +25,7 @@ class WeatherService
     // Marine data from Open-Meteo (for Marine locations only)
     public function getMarineForecast($lat, $lon)
     {
-        $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,water_temperature";
+        $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature";
         $response = $this->client->get($url);
         return json_decode($response->getBody(), true);
     }
