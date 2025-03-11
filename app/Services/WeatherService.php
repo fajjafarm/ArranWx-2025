@@ -32,7 +32,7 @@ class WeatherService
         $lon = round($lon, 4);
 
         try {
-            $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,water_temperature&wind_speed_unit=mph";
+            $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature&wind_speed_unit=mph";
             $response = $this->client->get($url);
             return json_decode($response->getBody(), true);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
