@@ -32,6 +32,7 @@ class WeatherService
         $lon = round($lon, 4);
 
         try {
+            // Updated to use sea_surface_temperature
             $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature&wind_speed_unit=mph";
             $response = $this->client->get($url);
             return json_decode($response->getBody(), true);
@@ -43,7 +44,7 @@ class WeatherService
 
     public function getSunriseSunset($lat, $lon, $date)
     {
-        $url = "https://api.met.no/weatherapi/sunrise/3.0/sun?lat={$lat}&lon={$lon}&date={$date}&offset=+00:00"; // UTC offset
+        $url = "https://api.met.no/weatherapi/sunrise/3.0/sun?lat={$lat}&lon={$lon}&date={$date}&offset=+00:00";
         try {
             $response = $this->client->get($url);
             $data = json_decode($response->getBody(), true);

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use App\Services\WeatherService;
 use App\Models\Location;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class WeatherController extends Controller
@@ -15,26 +14,25 @@ class WeatherController extends Controller
     {
         $this->weatherService = $weatherService;
     }
+
     public function index()
     {
         $locations = Location::all();
         $weatherData = [];
 
         foreach ($locations as $location) {
-            // Cache weather data for 1 hour (3600 seconds)
-            $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
-            $weather = Cache::remember($weatherCacheKey, 3600, function () use ($location) {
-                return $this->weatherService->getWeather($location->latitude, $location->longitude);
-            });
-            $weatherDetails = $weather['properties']['timeseries'][0]['data']['instant']['details'];
+            Log::info("Fetching weather data for {$location->name}");
+            $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
+            Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
+            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+                : [];
 
             $marine = null;
             if ($location->type === 'Marine') {
-                // Cache marine data for 1 hour (3600 seconds)
-                $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
-                $marineResponse = Cache::remember($marineCacheKey, 3600, function () use ($location) {
-                    return $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-                });
+                Log::info("Fetching marine data for {$location->name}");
+                $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+                Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
                 if ($marineResponse) {
                     $marine = [
                         'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
@@ -44,7 +42,7 @@ class WeatherController extends Controller
                         'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
                         'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
                         'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                        'water_temperature' => $marineResponse['hourly']['water_temperature'][0] ?? null,
+                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null, // Updated key
                     ];
                 }
             }
@@ -57,6 +55,7 @@ class WeatherController extends Controller
             ];
         }
 
+        Log::info("Weather data sent to dashboard view", $weatherData);
         return view('dashboard', compact('weatherData', 'locations'));
     }
 
@@ -64,62 +63,49 @@ class WeatherController extends Controller
     {
         $location = Location::where('name', $name)->firstOrFail();
 
-        // Cache current weather data for 1 hour
-        $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
-        $weather = Cache::remember($weatherCacheKey, 3600, function () use ($location) {
-            $data = $this->weatherService->getWeather($location->latitude, $location->longitude);
-            Log::info("Raw weather data for {$location->name}", ['data' => $data]);
-            return $data;
-        });
-
-        // Check if timeseries exists and has data
+        Log::info("Fetching weather data for {$location->name}");
+        $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
+        Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
         $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
             ? $weather['properties']['timeseries'][0]['data']['instant']['details']
             : [];
 
-        // Cache 10-day forecast data for 1 hour
-        $forecastCacheKey = "forecast_{$location->latitude}_{$location->longitude}";
-        $forecastData = Cache::remember($forecastCacheKey, 3600, function () use ($location, $weather) {
-            $forecast = [];
-            if (isset($weather['properties']['timeseries'])) {
-                $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
-                    return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
-                });
-                $dailyData = array_values($dailyData);
-                for ($i = 0; $i < min(10, count($dailyData)); $i++) {
-                    $day = $dailyData[$i];
-                    $forecast[] = [
-                        'date' => $day['time'],
-                        'temperature' => $day['data']['instant']['details']['air_temperature'] ?? null,
-                        'wind_speed' => $day['data']['instant']['details']['wind_speed'] ?? null,
-                        'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
-                    ];
-                }
-            }
-            return $forecast;
-        });
-
-        // Cache sunrise/sunset data for 1 hour
-        $sunCacheKey = "sun_{$location->latitude}_{$location->longitude}";
-        $sunData = Cache::remember($sunCacheKey, 3600, function () use ($location) {
-            $sunriseSunset = [];
-            for ($i = 0; $i < 10; $i++) {
-                $date = now()->addDays($i)->toDateString();
-                $sunResponse = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
-                $sunriseSunset[$date] = [
-                    'sunrise' => $sunResponse['sunrise'],
-                    'sunset' => $sunResponse['sunset'],
+        Log::info("Processing forecast data for {$location->name}");
+        $forecastData = [];
+        if (isset($weather['properties']['timeseries'])) {
+            $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
+                return substr($entry['time'], 11, 8) === '00:00:00';
+            });
+            $dailyData = array_values($dailyData);
+            for ($i = 0; $i < min(10, count($dailyData)); $i++) {
+                $day = $dailyData[$i];
+                $forecastData[] = [
+                    'date' => $day['time'],
+                    'temperature' => $day['data']['instant']['details']['air_temperature'] ?? null,
+                    'wind_speed' => $day['data']['instant']['details']['wind_speed'] ?? null,
+                    'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
                 ];
             }
-            return $sunriseSunset;
-        });
+        }
+        Log::info("Processed forecast data for {$location->name}", ['forecast' => $forecastData]);
+
+        Log::info("Fetching sunrise/sunset data for {$location->name}");
+        $sunData = [];
+        for ($i = 0; $i < 10; $i++) {
+            $date = now()->addDays($i)->toDateString();
+            $sunResponse = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
+            $sunData[$date] = [
+                'sunrise' => $sunResponse['sunrise'],
+                'sunset' => $sunResponse['sunset'],
+            ];
+        }
+        Log::info("Sunrise/sunset data for {$location->name}", ['sun' => $sunData]);
 
         $marine = null;
         if ($location->type === 'Marine') {
-            $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
-            $marineResponse = Cache::remember($marineCacheKey, 3600, function () use ($location) {
-                return $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-            });
+            Log::info("Fetching marine data for {$location->name}");
+            $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+            Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
             if ($marineResponse) {
                 $marine = [
                     'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
@@ -129,7 +115,7 @@ class WeatherController extends Controller
                     'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
                     'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
                     'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                    'water_temperature' => $marineResponse['hourly']['water_temperature'][0] ?? null,
+                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null, // Updated key
                 ];
             }
         }

@@ -7,64 +7,17 @@
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <style>
-        .wave-graphic {
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            height: 100px;
-            margin-top: 20px;
-        }
-        .wave-bar {
-            width: 20px;
-            background-color: #3498db;
-            transition: height 0.3s;
-        }
-        .wave-label {
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
-        .wave-direction {
-            width: 50px;
-            height: 50px;
-            position: relative;
-            margin: 20px auto;
-        }
-        .wave-arrow {
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 30px solid #e74c3c;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform-origin: center bottom;
-        }
-        .forecast-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .forecast-table th, .forecast-table td {
-            padding: 10px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
-        }
-        .forecast-table th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-        }
+        .wave-graphic { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 20px; }
+        .wave-bar { width: 20px; background-color: #3498db; transition: height 0.3s; }
+        .wave-label { text-align: center; font-size: 12px; color: #666; }
+        .wave-direction { width: 50px; height: 50px; position: relative; margin: 20px auto; }
+        .wave-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #e74c3c; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
+        .forecast-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .forecast-table th, .forecast-table td { padding: 10px; text-align: center; border-bottom: 1px solid #ddd; }
+        .forecast-table th { background-color: #f8f9fa; font-weight: bold; }
         @media (max-width: 768px) {
-            .forecast-table th, .forecast-table td {
-                padding: 8px;
-                font-size: 14px;
-            }
-            .forecast-table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
+            .forecast-table th, .forecast-table td { padding: 8px; font-size: 14px; }
+            .forecast-table { display: block; overflow-x: auto; white-space: nowrap; }
         }
     </style>
 @endsection
@@ -87,24 +40,24 @@
                             </span>
                         </div>
                         <h3 class="mb-0 fw-bold">
-                            @if (isset($weatherData['current']))
+                            @if (!empty($weatherData['current']) && isset($weatherData['current']['air_temperature']))
                                 {{ $weatherData['current']['air_temperature'] }}°C
                             @else
                                 N/A
                             @endif
                         </h3>
                     </div>
-                    @if (isset($weatherData['current']))
+                    @if (!empty($weatherData['current']))
                         <p class="mb-1 text-muted">
-                            <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] }} m/s</span>
-                            <span>Humidity: {{ $weatherData['current']['relative_humidity'] }}%</span>
+                            <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] ?? 'N/A' }} m/s</span>
+                            <span>Humidity: {{ $weatherData['current']['relative_humidity'] ?? 'N/A' }}%</span>
                         </p>
                     @endif
-                    @if ($weatherData['type'] === 'Marine' && isset($weatherData['marine']))
+                    @if ($weatherData['type'] === 'Marine' && !empty($weatherData['marine']))
                         <hr class="my-2">
                         <h6 class="text-muted fs-14">Current Marine Conditions</h6>
                         <p class="mb-1 text-muted fs-12">
-                            <span class="fw-semibold">Sea Temp:</span> {{ $weatherData['marine']['water_temperature'] ?? 'N/A' }}°C
+                            <span class="fw-semibold">Sea Surface Temp:</span> {{ $weatherData['marine']['sea_surface_temperature'] ?? 'N/A' }}°C <!-- Updated label and key -->
                         </p>
                         <p class="mb-1 text-muted fs-12">
                             <span class="fw-semibold">Wave Height:</span> {{ $weatherData['marine']['wave_height'] ?? 'N/A' }} m
@@ -149,40 +102,39 @@
                     @endif
 
                     <!-- 10-Day Forecast Table -->
-                    <h6 class="text-muted fs-14 mt-4">10-Day Forecast</h6>
-                    <table class="forecast-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Temp (°C)</th>
-                                <th>Wind (m/s)</th>
-                                <th>Humidity (%)</th>
-                                <th>Sunrise</th>
-                                <th>Sunset</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($weatherData['forecast'] as $day)
-                                <?php $dateOnly = \Carbon\Carbon::parse($day['date'])->toDateString(); ?>
+                    @if (!empty($weatherData['forecast']))
+                        <h6 class="text-muted fs-14 mt-4">10-Day Forecast</h6>
+                        <table class="forecast-table">
+                            <thead>
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($day['date'])->format('M d') }}</td>
-                                    <td>{{ $day['temperature'] ?? 'N/A' }}</td>
-                                    <td>{{ $day['wind_speed'] ?? 'N/A' }}</td>
-                                    <td>{{ $day['humidity'] ?? 'N/A' }}</td>
-                                    <td>{{ $weatherData['sun'][$dateOnly]['sunrise'] ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunrise'])->format('H:i') : 'N/A' }}</td>
-                                    <td>{{ $weatherData['sun'][$dateOnly]['sunset'] ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunset'])->format('H:i') : 'N/A' }}</td>
+                                    <th>Date</th>
+                                    <th>Temp (°C)</th>
+                                    <th>Wind (m/s)</th>
+                                    <th>Humidity (%)</th>
+                                    <th>Sunrise</th>
+                                    <th>Sunset</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($weatherData['forecast'] as $day)
+                                    <?php $dateOnly = \Carbon\Carbon::parse($day['date'])->toDateString(); ?>
+                                    <tr>
+                                        <td>{{ \Carbon\Carbon::parse($day['date'])->format('M d') }}</td>
+                                        <td>{{ $day['temperature'] ?? 'N/A' }}</td>
+                                        <td>{{ $day['wind_speed'] ?? 'N/A' }}</td>
+                                        <td>{{ $day['humidity'] ?? 'N/A' }}</td>
+                                        <td>{{ !empty($weatherData['sun'][$dateOnly]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunrise'])->format('H:i') : 'N/A' }}</td>
+                                        <td>{{ !empty($weatherData['sun'][$dateOnly]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunset'])->format('H:i') : 'N/A' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <p class="text-muted mt-4">No forecast data available.</p>
+                    @endif
 
                     <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light mt-3">Back to Dashboard</a>
                 </div>
             </div>
         </div><!-- end col -->
     </div><!-- end row -->
-@endsection
-
-@section('scripts')
-    @vite(['resources/js/pages/dashboard-sales.js'])
-@endsection
