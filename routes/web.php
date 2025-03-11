@@ -16,6 +16,10 @@ use App\Http\Controllers\WeatherController;
 
 // Main dashboard route
 Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
+Route::get('/home', fn()=>view('dashboards.index'))->name('home');
+Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])->name('third');
+Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])->name('second');
+Route::get('{any}', [RoutingController::class, 'root'])->name('any');
 
 // Optional future routes (commented out for now)
 // Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
