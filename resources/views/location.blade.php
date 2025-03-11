@@ -128,7 +128,7 @@
                                 <tbody>
                                     @foreach ($hours as $hour)
                                         <tr>
-                                            <td>{{ $hour[' Fabric'] }}</td>
+                                            <td>{{ $hour['time'] }}</td>
                                             <td>{{ $hour['temperature'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['condition'] }}</td>
