@@ -15,6 +15,50 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
+    public function index()
+    {
+        $locations = Location::all();
+        $weatherData = [];
+
+        foreach ($locations as $location) {
+            Log::info("Fetching weather data for {$location->name}");
+            $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
+            Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
+            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+                : [];
+
+            $marine = null;
+            if ($location->type === 'Marine') {
+                Log::info("Fetching marine data for {$location->name}");
+                $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+                Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
+                if ($marineResponse) {
+                    $marine = [
+                        'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
+                        'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
+                        'wave_period' => $marineResponse['hourly']['wave_period'][0] ?? null,
+                        'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][0] ?? null,
+                        'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
+                        'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
+                        'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
+                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
+                    ];
+                }
+            }
+
+            $weatherData[$location->name] = [
+                'weather' => $weatherDetails,
+                'marine' => $marine,
+                'type' => $location->type,
+                'altitude' => $location->altitude ?? 0,
+            ];
+        }
+
+        Log::info("Weather data sent to dashboard view", $weatherData);
+        return view('dashboard', compact('weatherData', 'locations'));
+    }
+
     public function show($name)
     {
         $location = Location::where('name', $name)->firstOrFail();
