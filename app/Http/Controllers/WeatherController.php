@@ -83,3 +83,4 @@ class WeatherController extends Controller
     
         return view('location', compact('location', 'weatherData'));
     }
+}
