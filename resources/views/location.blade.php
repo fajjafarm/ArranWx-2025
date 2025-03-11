@@ -102,8 +102,8 @@
                         @endif
                     @endif
 
-                    <!-- Hourly Weather Data (Villages Only) -->
-                    @if ($weatherData['type'] === 'Village' && isset($weatherData['hourly']) && count($weatherData['hourly']) > 0)
+                    <!-- Hourly Weather Data (Villages and Hills) -->
+                    @if (in_array($weatherData['type'], ['Village', 'Hill']) && isset($weatherData['hourly']) && count($weatherData['hourly']) > 0)
                         <h6 class="text-muted fs-14 mt-4">Hourly Weather Forecast (Every 2 Hours)</h6>
                         @foreach ($weatherData['hourly'] as $date => $hours)
                             <div class="day-header">
@@ -139,11 +139,8 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                            @if ($weatherData['type'] === 'Village' && isset($weatherData['hourly']) && count($weatherData['hourly']) > 0)
-    <!-- ... existing table code ... -->
-    <p class="text-muted fs-12 mt-2">* Gusts estimated based on wind speed and weather conditions.</p>
-@endif
                         @endforeach
+                        <p class="text-muted fs-12 mt-2">* Gusts estimated based on wind speed, weather conditions, and {{ $weatherData['type'] === 'Hill' ? 'altitude' : 'rural factors' }}.</p>
                     @elseif ($weatherData['type'] !== 'Marine')
                         <p class="text-muted mt-4">No hourly weather data available.</p>
                     @endif

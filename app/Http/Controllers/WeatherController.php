@@ -88,34 +88,38 @@ class WeatherController extends Controller
                     $details = $entry['data']['instant']['details'];
                     $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
 
-                    // Calculate Gust Factor
+                    // Calculate Gust
                     $windSpeed = $details['wind_speed'] ?? 0;
                     $cloudCover = $details['cloud_area_fraction'] ?? 0;
                     $pressure = $details['air_pressure_at_sea_level'] ?? null;
+                    $altitude = $location->altitude ?? 0;
 
-                    // Base gust factor for rural area
-                    $gustFactor = 1.5;
+                    // Base gust factor: 1.5 for villages, 1.6 for hills (open topography)
+                    $gustFactor = $location->type === 'Hill' ? 1.6 : 1.5;
 
-                    // Adjust based on cloud cover (more clouds = more instability)
+                    // Adjust based on cloud cover
                     if ($cloudCover > 75) {
-                        $gustFactor += 0.2; // Up to 1.7 for cloudy/stormy
+                        $gustFactor += 0.2; // Up to 1.8 (village) or 2.0 (hill)
                     } elseif ($cloudCover < 25) {
-                        $gustFactor -= 0.1; // Down to 1.4 for clear/stable
+                        $gustFactor -= 0.1; // Down to 1.4 (village) or 1.5 (hill)
                     }
 
-                    // Adjust based on pressure trend (if available)
+                    // Adjust based on pressure trend
                     if ($previousPressure !== null && $pressure !== null) {
-                        $pressureChange = $previousPressure - $pressure; // Drop = stormier
-                        if ($pressureChange > 1) { // Rapid drop
-                            $gustFactor += 0.2; // Up to 1.9 for stormy
-                        } elseif ($pressureChange < -1) { // Rapid rise
-                            $gustFactor -= 0.1; // Down to 1.4 for stabilizing
+                        $pressureChange = $previousPressure - $pressure;
+                        if ($pressureChange > 1) {
+                            $gustFactor += 0.2; // Stormy
+                        } elseif ($pressureChange < -1) {
+                            $gustFactor -= 0.1; // Stabilizing
                         }
                     }
                     $previousPressure = $pressure;
 
-                    // Use provided gust if available, otherwise estimate
-                    $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor);
+                    // Altitude multiplier for hills (1.5% increase per 100m)
+                    $altitudeMultiplier = $location->type === 'Hill' ? (1 + ($altitude / 100) * 0.015) : 1;
+
+                    // Use API gust if available, otherwise estimate
+                    $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor * $altitudeMultiplier);
 
                     $hourlyData[$date][] = [
                         'time' => $time->format('H:i'),
@@ -123,7 +127,7 @@ class WeatherController extends Controller
                         'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
                         'condition' => $next1Hour['summary']['symbol_code'] ?? 'N/A',
                         'wind_speed' => $windSpeed,
-                        'wind_gust' => round($windGust, 1), // Round to 1 decimal
+                        'wind_gust' => round($windGust, 1),
                         'pressure' => $pressure,
                     ];
                 }
