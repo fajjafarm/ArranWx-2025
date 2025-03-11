@@ -19,10 +19,15 @@
         .hourly-table th { background-color: #f8f9fa; font-weight: bold; }
         .day-header { background-color: #e9ecef; font-size: 16px; padding: 10px; text-align: left; margin-top: 20px; }
         .weather-icon { font-size: 24px; color: #555; }
+        .sun-moon-icon { font-size: 18px; color: #777; margin-right: 5px; vertical-align: middle; }
+        .day-header span { margin-right: 15px; }
         @media (max-width: 768px) {
             .hourly-table { display: block; overflow-x: auto; white-space: nowrap; }
             .hourly-table th, .hourly-table td { padding: 6px; font-size: 12px; }
             .weather-icon { font-size: 18px; }
+            .sun-moon-icon { font-size: 14px; margin-right: 3px; }
+            .day-header { font-size: 14px; }
+            .day-header span { margin-right: 10px; }
         }
     </style>
 @endsection
@@ -111,11 +116,11 @@
                         <h6 class="text-muted fs-14 mt-4">Hourly Weather Forecast (Every 2 Hours)</h6>
                         @foreach ($weatherData['hourly'] as $date => $hours)
                             <div class="day-header">
-                                {{ \Carbon\Carbon::parse($date)->format('l, M d') }} 
-                                | Sunrise: {{ isset($weatherData['sun_moon'][$date]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunrise'])->format('H:i') : 'N/A' }}
-                                | Sunset: {{ isset($weatherData['sun_moon'][$date]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunset'])->format('H:i') : 'N/A' }}
-                                | Moonrise: {{ isset($weatherData['sun_moon'][$date]['moonrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonrise'])->format('H:i') : 'N/A' }}
-                                | Moonset: {{ isset($weatherData['sun_moon'][$date]['moonset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonset'])->format('H:i') : 'N/A' }}
+                                {{ \Carbon\Carbon::parse($date)->format('l, M d') }}
+                                <span><i class="wi wi-sunrise sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunrise'])->format('H:i') : 'N/A' }}</span>
+                                <span><i class="wi wi-sunset sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunset'])->format('H:i') : 'N/A' }}</span>
+                                <span><i class="wi wi-moonrise sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['moonrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonrise'])->format('H:i') : 'N/A' }}</span>
+                                <span><i class="wi wi-moonset sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['moonset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonset'])->format('H:i') : 'N/A' }}</span>
                             </div>
                             <table class="hourly-table">
                                 <thead>
@@ -165,7 +170,7 @@
                                                 'snowandthunder' => 'wi-snow-thunderstorm',
                                                 'fog' => 'wi-fog'
                                             ];
-                                            $iconClass = $iconMap[$condition] ?? 'wi-na'; // Fallback icon
+                                            $iconClass = $iconMap[$condition] ?? 'wi-na';
                                         ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
