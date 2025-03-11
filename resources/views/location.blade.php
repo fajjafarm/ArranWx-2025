@@ -21,6 +21,9 @@
         .weather-icon { font-size: 24px; color: #555; }
         .sun-moon-icon { font-size: 18px; color: #777; margin-right: 5px; vertical-align: middle; }
         .day-header span { margin-right: 15px; }
+        .beaufort-key { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        .beaufort-key table { width: 100%; border-collapse: collapse; }
+        .beaufort-key td { padding: 5px; text-align: center; font-size: 12px; }
         @media (max-width: 768px) {
             .hourly-table { display: block; overflow-x: auto; white-space: nowrap; }
             .hourly-table th, .hourly-table td { padding: 6px; font-size: 12px; }
@@ -28,6 +31,7 @@
             .sun-moon-icon { font-size: 14px; margin-right: 3px; }
             .day-header { font-size: 14px; }
             .day-header span { margin-right: 10px; }
+            .beaufort-key td { font-size: 10px; padding: 3px; }
         }
     </style>
 @endsection
@@ -171,14 +175,61 @@
                                                 'fog' => 'wi-fog'
                                             ];
                                             $iconClass = $iconMap[$condition] ?? 'wi-na';
+
+                                            // Beaufort Scale Data
+                                            $beaufortRanges = [
+                                                0 => ['max' => 0.5, 'desc' => 'Calm', 'colorStart' => '#e6ffe6', 'colorEnd' => '#e6ffe6'],
+                                                1 => ['max' => 1.5, 'desc' => 'Light Air', 'colorStart' => '#ccffcc', 'colorEnd' => '#b3ffb3'],
+                                                2 => ['max' => 3.3, 'desc' => 'Light Breeze', 'colorStart' => '#b3ffb3', 'colorEnd' => '#99ff99'],
+                                                3 => ['max' => 5.5, 'desc' => 'Gentle Breeze', 'colorStart' => '#99ff99', 'colorEnd' => '#80ff80'],
+                                                4 => ['max' => 7.9, 'desc' => 'Moderate Breeze', 'colorStart' => '#80ff80', 'colorEnd' => '#66ff66'],
+                                                5 => ['max' => 10.7, 'desc' => 'Fresh Breeze', 'colorStart' => '#ffff99', 'colorEnd' => '#ffeb3b'],
+                                                6 => ['max' => 13.8, 'desc' => 'Strong Breeze', 'colorStart' => '#ffeb3b', 'colorEnd' => '#ffd700'],
+                                                7 => ['max' => 17.1, 'desc' => 'Near Gale', 'colorStart' => '#ffcc80', 'colorEnd' => '#ff9800'],
+                                                8 => ['max' => 20.7, 'desc' => 'Gale', 'colorStart' => '#ff9800', 'colorEnd' => '#ff6666'],
+                                                9 => ['max' => 24.4, 'desc' => 'Strong Gale', 'colorStart' => '#ff6666', 'colorEnd' => '#ff3333'],
+                                                10 => ['max' => 28.4, 'desc' => 'Storm', 'colorStart' => '#ff3333', 'colorEnd' => '#cc0000'],
+                                                11 => ['max' => 32.6, 'desc' => 'Violent Storm', 'colorStart' => '#cc0000', 'colorEnd' => '#990000'],
+                                                12 => ['max' => PHP_FLOAT_MAX, 'desc' => 'Hurricane Force', 'colorStart' => '#990000', 'colorEnd' => '#800000']
+                                            ];
+
+                                            // Wind Speed Beaufort
+                                            $windSpeed = $hour['wind_speed'] ?? 0;
+                                            $windBeaufortLevel = 0;
+                                            $windBeaufortDesc = 'N/A';
+                                            $gradient = 'background: #e6ffe6;';
+                                            if (is_numeric($windSpeed)) {
+                                                foreach ($beaufortRanges as $level => $range) {
+                                                    if ($windSpeed <= $range['max']) {
+                                                        $windBeaufortLevel = $level;
+                                                        $windBeaufortDesc = $range['desc'];
+                                                        $gradient = "background: linear-gradient(to right, {$range['colorStart']}, {$range['colorEnd']});";
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            // Wind Gust Beaufort
+                                            $windGust = $hour['wind_gust'] ?? 0;
+                                            $gustBeaufortLevel = 0;
+                                            $gustBeaufortDesc = 'N/A';
+                                            if (is_numeric($windGust)) {
+                                                foreach ($beaufortRanges as $level => $range) {
+                                                    if ($windGust <= $range['max']) {
+                                                        $gustBeaufortLevel = $level;
+                                                        $gustBeaufortDesc = $range['desc'];
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                         ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
                                             <td>{{ $hour['temperature'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
-                                            <td>{{ $hour['wind_speed'] ?? 'N/A' }}</td>
-                                            <td>{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
+                                            <td style="{{ $gradient }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
+                                            <td title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td>{{ $hour['pressure'] ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
@@ -186,6 +237,34 @@
                             </table>
                         @endforeach
                         <p class="text-muted fs-12 mt-2">* Gusts estimated based on wind speed, weather conditions, and {{ $weatherData['type'] === 'Hill' ? 'altitude' : 'rural factors' }}.</p>
+
+                        <!-- Beaufort Scale Key -->
+                        <div class="beaufort-key">
+                            <h6 class="text-muted fs-14">Beaufort Scale Key</h6>
+                            <table>
+                                <tr>
+                                    <td style="background: linear-gradient(to right, #e6ffe6, #e6ffe6);">0: Calm (< 0.5 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ccffcc, #b3ffb3);">1: Light Air (0.5–1.5 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #b3ffb3, #99ff99);">2: Light Breeze (1.6–3.3 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #99ff99, #80ff80);">3: Gentle Breeze (3.4–5.5 m/s)</td>
+                                </tr>
+                                <tr>
+                                    <td style="background: linear-gradient(to right, #80ff80, #66ff66);">4: Moderate Breeze (5.6–7.9 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ffff99, #ffeb3b);">5: Fresh Breeze (8.0–10.7 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ffeb3b, #ffd700);">6: Strong Breeze (10.8–13.8 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ffcc80, #ff9800);">7: Near Gale (13.9–17.1 m/s)</td>
+                                </tr>
+                                <tr>
+                                    <td style="background: linear-gradient(to right, #ff9800, #ff6666);">8: Gale (17.2–20.7 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ff6666, #ff3333);">9: Strong Gale (20.8–24.4 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #ff3333, #cc0000);">10: Storm (24.5–28.4 m/s)</td>
+                                    <td style="background: linear-gradient(to right, #cc0000, #990000);">11: Violent Storm (28.5–32.6 m/s)</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" style="background: linear-gradient(to right, #990000, #800000);">12: Hurricane Force (> 32.6 m/s)</td>
+                                </tr>
+                            </table>
+                        </div>
                     @elseif ($weatherData['type'] !== 'Marine')
                         <p class="text-muted mt-4">No hourly weather data available.</p>
                     @endif
