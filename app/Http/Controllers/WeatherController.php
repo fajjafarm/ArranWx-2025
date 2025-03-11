@@ -1,4 +1,4 @@
-<?php
+<?php 
 namespace App\Http\Controllers;
 
 use App\Services\WeatherService;
@@ -15,7 +15,7 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
-    // ... index method remains unchanged ...
+    // ... index method unchanged ...
 
     public function show($name)
     {
@@ -32,11 +32,10 @@ class WeatherController extends Controller
         $forecastCacheKey = "forecast_{$location->latitude}_{$location->longitude}";
         $forecastData = Cache::remember($forecastCacheKey, 3600, function () use ($location, $weather) {
             $forecast = [];
-            // Take the first entry of each day (e.g., 00:00) for simplicity
             $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
                 return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
             });
-            $dailyData = array_values($dailyData); // Reindex array
+            $dailyData = array_values($dailyData);
             for ($i = 0; $i < min(10, count($dailyData)); $i++) {
                 $day = $dailyData[$i];
                 $forecast[] = [
@@ -57,8 +56,8 @@ class WeatherController extends Controller
                 $date = now()->addDays($i)->toDateString();
                 $sunResponse = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
                 $sunriseSunset[$date] = [
-                    'sunrise' => $sunResponse['properties']['sunrise']['time'] ?? null,
-                    'sunset' => $sunResponse['properties']['sunset']['time'] ?? null,
+                    'sunrise' => $sunResponse['sunrise'],
+                    'sunset' => $sunResponse['sunset'],
                 ];
             }
             return $sunriseSunset;

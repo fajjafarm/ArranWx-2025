@@ -43,8 +43,17 @@ class WeatherService
 
     public function getSunriseSunset($lat, $lon, $date)
     {
-        $url = "https://api.met.no/weatherapi/sunrise/3.0/.json?lat={$lat}&lon={$lon}&date={$date}";
-        $response = $this->client->get($url);
-        return json_decode($response->getBody(), true);
+        $url = "https://api.met.no/weatherapi/sunrise/3.0/sun?lat={$lat}&lon={$lon}&date={$date}&offset=+00:00"; // UTC offset
+        try {
+            $response = $this->client->get($url);
+            $data = json_decode($response->getBody(), true);
+            return [
+                'sunrise' => $data['properties']['sunrise']['time'] ?? null,
+                'sunset' => $data['properties']['sunset']['time'] ?? null,
+            ];
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            \Log::error("Sunrise API Error: " . $e->getMessage());
+            return ['sunrise' => null, 'sunset' => null];
+        }
     }
 }
