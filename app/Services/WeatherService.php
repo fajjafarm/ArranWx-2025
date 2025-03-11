@@ -33,13 +33,18 @@ class WeatherService
 
         try {
             $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,water_temperature&wind_speed_unit=mph";
-            \Log::info("Marine Forecast URL: {$url}");
             $response = $this->client->get($url);
             return json_decode($response->getBody(), true);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             \Log::error("Marine API Error: " . $e->getMessage());
-            \Log::error("Response: " . $e->getResponse()->getBody()->getContents());
             return null;
         }
+    }
+
+    public function getSunriseSunset($lat, $lon, $date)
+    {
+        $url = "https://api.met.no/weatherapi/sunrise/2.0/.json?lat={$lat}&lon={$lon}&date={$date}";
+        $response = $this->client->get($url);
+        return json_decode($response->getBody(), true);
     }
 }
