@@ -42,7 +42,7 @@ class WeatherController extends Controller
                         'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
                         'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
                         'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null, // Updated key
+                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
                     ];
                 }
             }
@@ -63,18 +63,24 @@ class WeatherController extends Controller
     {
         $location = Location::where('name', $name)->firstOrFail();
 
-        Log::info("Fetching weather data for {$location->name}");
+        Log::info("Fetching weather data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
         $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
         Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
-        $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
-            ? $weather['properties']['timeseries'][0]['data']['instant']['details']
-            : [];
 
-        Log::info("Processing forecast data for {$location->name}");
-        $forecastData = [];
-        if (isset($weather['properties']['timeseries'])) {
+        // Handle missing or invalid weather data
+        if (!isset($weather['properties']) || !isset($weather['properties']['timeseries']) || empty($weather['properties']['timeseries'])) {
+            Log::warning("No valid timeseries data returned for {$location->name}", ['response' => $weather]);
+            $currentWeather = [];
+            $forecastData = [];
+        } else {
+            $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+                : [];
+
+            Log::info("Processing forecast data for {$location->name}");
+            $forecastData = [];
             $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
-                return substr($entry['time'], 11, 8) === '00:00:00';
+                return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
             });
             $dailyData = array_values($dailyData);
             for ($i = 0; $i < min(10, count($dailyData)); $i++) {
@@ -86,8 +92,8 @@ class WeatherController extends Controller
                     'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
                 ];
             }
+            Log::info("Processed forecast data for {$location->name}", ['forecast' => $forecastData]);
         }
-        Log::info("Processed forecast data for {$location->name}", ['forecast' => $forecastData]);
 
         Log::info("Fetching sunrise/sunset data for {$location->name}");
         $sunData = [];
@@ -115,7 +121,7 @@ class WeatherController extends Controller
                     'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
                     'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
                     'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null, // Updated key
+                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
                 ];
             }
         }
