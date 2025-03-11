@@ -48,7 +48,7 @@ class WeatherController extends Controller
             ];
         }
     
-        return view('dashboard', compact('weatherData', 'locations'));
+        return view('dashboard', compact('weatherData', 'location'));
     }
     
     public function show($name)
