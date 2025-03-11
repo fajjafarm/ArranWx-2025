@@ -14,7 +14,6 @@ class WeatherService
         ]);
     }
 
-    // Weather data from Yr.no (for all locatiosns)
     public function getWeather($lat, $lon)
     {
         $url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={$lat}&lon={$lon}";
@@ -22,11 +21,25 @@ class WeatherService
         return json_decode($response->getBody(), true);
     }
 
-    // Marine data from Open-Meteo (for Marine locations only)
     public function getMarineForecast($lat, $lon)
     {
-        $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature";
-        $response = $this->client->get($url);
-        return json_decode($response->getBody(), true);
+        if (!is_numeric($lat) || !is_numeric($lon) || $lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
+            \Log::error("Invalid coordinates for marine forecast: lat={$lat}, lon={$lon}");
+            return null;
+        }
+
+        $lat = round($lat, 4);
+        $lon = round($lon, 4);
+
+        try {
+            $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,water_temperature&wind_speed_unit=mph";
+            \Log::info("Marine Forecast URL: {$url}");
+            $response = $this->client->get($url);
+            return json_decode($response->getBody(), true);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            \Log::error("Marine API Error: " . $e->getMessage());
+            \Log::error("Response: " . $e->getResponse()->getBody()->getContents());
+            return null;
+        }
     }
 }
