@@ -66,26 +66,34 @@ class WeatherController extends Controller
         // Cache current weather data for 1 hour
         $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
         $weather = Cache::remember($weatherCacheKey, 3600, function () use ($location) {
-            return $this->weatherService->getWeather($location->latitude, $location->longitude);
+            $data = $this->weatherService->getWeather($location->latitude, $location->longitude);
+            Log::info("Raw weather data for {$location->name}", ['data' => $data]);
+            return $data;
         });
-        $currentWeather = $weather['properties']['timeseries'][0]['data']['instant']['details'];
+
+        // Check if timeseries exists and has data
+        $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+            ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+            : [];
 
         // Cache 10-day forecast data for 1 hour
         $forecastCacheKey = "forecast_{$location->latitude}_{$location->longitude}";
         $forecastData = Cache::remember($forecastCacheKey, 3600, function () use ($location, $weather) {
             $forecast = [];
-            $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
-                return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
-            });
-            $dailyData = array_values($dailyData);
-            for ($i = 0; $i < min(10, count($dailyData)); $i++) {
-                $day = $dailyData[$i];
-                $forecast[] = [
-                    'date' => $day['time'],
-                    'temperature' => $day['data']['instant']['details']['air_temperature'] ?? null,
-                    'wind_speed' => $day['data']['instant']['details']['wind_speed'] ?? null,
-                    'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
-                ];
+            if (isset($weather['properties']['timeseries'])) {
+                $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
+                    return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
+                });
+                $dailyData = array_values($dailyData);
+                for ($i = 0; $i < min(10, count($dailyData)); $i++) {
+                    $day = $dailyData[$i];
+                    $forecast[] = [
+                        'date' => $day['time'],
+                        'temperature' => $day['data']['instant']['details']['air_temperature'] ?? null,
+                        'wind_speed' => $day['data']['instant']['details']['wind_speed'] ?? null,
+                        'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
+                    ];
+                }
             }
             return $forecast;
         });
@@ -133,6 +141,8 @@ class WeatherController extends Controller
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,
         ];
+
+        Log::info("Weather data sent to view for {$location->name}", $weatherData);
 
         return view('location', compact('location', 'weatherData'));
     }
