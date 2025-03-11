@@ -43,7 +43,7 @@ class WeatherService
 
     public function getSunriseSunset($lat, $lon, $date)
     {
-        $url = "https://api.met.no/weatherapi/sunrise/2.0/.json?lat={$lat}&lon={$lon}&date={$date}";
+        $url = "https://api.met.no/weatherapi/sunrise/3.0/.json?lat={$lat}&lon={$lon}&date={$date}";
         $response = $this->client->get($url);
         return json_decode($response->getBody(), true);
     }
