@@ -17,8 +17,13 @@ class WeatherService
     public function getWeather($lat, $lon)
     {
         $url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={$lat}&lon={$lon}";
-        $response = $this->client->get($url);
-        return json_decode($response->getBody(), true);
+        try {
+            $response = $this->client->get($url);
+            return json_decode($response->getBody(), true);
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            \Log::error("Weather API Error for lat={$lat}, lon={$lon}: " . $e->getMessage());
+            return [];
+        }
     }
 
     public function getMarineForecast($lat, $lon)
@@ -32,7 +37,6 @@ class WeatherService
         $lon = round($lon, 4);
 
         try {
-            // Updated to use sea_surface_temperature
             $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature&wind_speed_unit=mph";
             $response = $this->client->get($url);
             return json_decode($response->getBody(), true);
@@ -51,10 +55,12 @@ class WeatherService
             return [
                 'sunrise' => $data['properties']['sunrise']['time'] ?? null,
                 'sunset' => $data['properties']['sunset']['time'] ?? null,
+                'moonrise' => $data['properties']['moonrise']['time'] ?? null,
+                'moonset' => $data['properties']['moonset']['time'] ?? null,
             ];
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             \Log::error("Sunrise API Error: " . $e->getMessage());
-            return ['sunrise' => null, 'sunset' => null];
+            return ['sunrise' => null, 'sunset' => null, 'moonrise' => null, 'moonset' => null];
         }
     }
 }

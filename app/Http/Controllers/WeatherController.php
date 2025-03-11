@@ -67,45 +67,54 @@ class WeatherController extends Controller
         $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
         Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
 
-        // Handle missing or invalid weather data
         if (!isset($weather['properties']) || !isset($weather['properties']['timeseries']) || empty($weather['properties']['timeseries'])) {
             Log::warning("No valid timeseries data returned for {$location->name}", ['response' => $weather]);
             $currentWeather = [];
-            $forecastData = [];
+            $hourlyData = [];
         } else {
             $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
                 ? $weather['properties']['timeseries'][0]['data']['instant']['details']
                 : [];
 
-            Log::info("Processing forecast data for {$location->name}");
-            $forecastData = [];
-            $dailyData = array_filter($weather['properties']['timeseries'], function ($entry) {
-                return substr($entry['time'], 11, 8) === '00:00:00'; // Midnight entries
-            });
-            $dailyData = array_values($dailyData);
-            for ($i = 0; $i < min(10, count($dailyData)); $i++) {
-                $day = $dailyData[$i];
-                $forecastData[] = [
-                    'date' => $day['time'],
-                    'temperature' => $day['data']['instant']['details']['air_temperature'] ?? null,
-                    'wind_speed' => $day['data']['instant']['details']['wind_speed'] ?? null,
-                    'humidity' => $day['data']['instant']['details']['relative_humidity'] ?? null,
-                ];
+            Log::info("Processing 2-hourly data for {$location->name}");
+            $hourlyData = [];
+            $timeseries = $weather['properties']['timeseries'];
+            foreach ($timeseries as $entry) {
+                $time = \Carbon\Carbon::parse($entry['time']);
+                // Filter to every 2 hours (00:00, 02:00, 04:00, etc.)
+                if ($time->minute === 0 && $time->hour % 2 === 0) {
+                    $date = $time->toDateString();
+                    $details = $entry['data']['instant']['details'];
+                    $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                    $hourlyData[$date][] = [
+                        'time' => $time->format('H:i'),
+                        'temperature' => $details['air_temperature'] ?? null,
+                        'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
+                        'condition' => $next1Hour['summary']['symbol_code'] ?? 'N/A',
+                        'wind_speed' => $details['wind_speed'] ?? null,
+                        'wind_gust' => $details['wind_speed_of_gust'] ?? null, // Yr.no provides this
+                        'pressure' => $details['air_pressure_at_sea_level'] ?? null,
+                    ];
+                }
             }
-            Log::info("Processed forecast data for {$location->name}", ['forecast' => $forecastData]);
+            // Limit to 10 days
+            $hourlyData = array_slice($hourlyData, 0, 10, true);
+            Log::info("Processed 2-hourly data for {$location->name}", ['hourly' => $hourlyData]);
         }
 
-        Log::info("Fetching sunrise/sunset data for {$location->name}");
-        $sunData = [];
+        Log::info("Fetching sun and moon data for {$location->name}");
+        $sunMoonData = [];
         for ($i = 0; $i < 10; $i++) {
             $date = now()->addDays($i)->toDateString();
-            $sunResponse = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
-            $sunData[$date] = [
-                'sunrise' => $sunResponse['sunrise'],
-                'sunset' => $sunResponse['sunset'],
+            $sunMoon = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
+            $sunMoonData[$date] = [
+                'sunrise' => $sunMoon['sunrise'],
+                'sunset' => $sunMoon['sunset'],
+                'moonrise' => $sunMoon['moonrise'],
+                'moonset' => $sunMoon['moonset'],
             ];
         }
-        Log::info("Sunrise/sunset data for {$location->name}", ['sun' => $sunData]);
+        Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
 
         $marine = null;
         if ($location->type === 'Marine') {
@@ -128,8 +137,8 @@ class WeatherController extends Controller
 
         $weatherData = [
             'current' => $currentWeather,
-            'forecast' => $forecastData,
-            'sun' => $sunData,
+            'hourly' => $hourlyData, // Replacing 'forecast' with 'hourly'
+            'sun_moon' => $sunMoonData, // Replacing 'sun' with 'sun_moon'
             'marine' => $marine,
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,
