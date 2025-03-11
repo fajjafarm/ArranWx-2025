@@ -15,50 +15,6 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
-    public function index()
-    {
-        $locations = Location::all();
-        $weatherData = [];
-
-        foreach ($locations as $location) {
-            Log::info("Fetching weather data for {$location->name}");
-            $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
-            Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
-            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
-                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
-                : [];
-
-            $marine = null;
-            if ($location->type === 'Marine') {
-                Log::info("Fetching marine data for {$location->name}");
-                $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-                Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
-                if ($marineResponse) {
-                    $marine = [
-                        'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
-                        'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
-                        'wave_period' => $marineResponse['hourly']['wave_period'][0] ?? null,
-                        'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][0] ?? null,
-                        'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
-                        'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
-                        'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
-                    ];
-                }
-            }
-
-            $weatherData[$location->name] = [
-                'weather' => $weatherDetails,
-                'marine' => $marine,
-                'type' => $location->type,
-                'altitude' => $location->altitude ?? 0,
-            ];
-        }
-
-        Log::info("Weather data sent to dashboard view", $weatherData);
-        return view('dashboard', compact('weatherData', 'locations'));
-    }
-
     public function show($name)
     {
         $location = Location::where('name', $name)->firstOrFail();
@@ -79,25 +35,55 @@ class WeatherController extends Controller
             Log::info("Processing 2-hourly data for {$location->name}");
             $hourlyData = [];
             $timeseries = $weather['properties']['timeseries'];
+            $previousPressure = null;
+
             foreach ($timeseries as $entry) {
                 $time = \Carbon\Carbon::parse($entry['time']);
-                // Filter to every 2 hours (00:00, 02:00, 04:00, etc.)
                 if ($time->minute === 0 && $time->hour % 2 === 0) {
                     $date = $time->toDateString();
                     $details = $entry['data']['instant']['details'];
                     $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+
+                    // Calculate Gust Factor
+                    $windSpeed = $details['wind_speed'] ?? 0;
+                    $cloudCover = $details['cloud_area_fraction'] ?? 0;
+                    $pressure = $details['air_pressure_at_sea_level'] ?? null;
+
+                    // Base gust factor for rural area
+                    $gustFactor = 1.5;
+
+                    // Adjust based on cloud cover (more clouds = more instability)
+                    if ($cloudCover > 75) {
+                        $gustFactor += 0.2; // Up to 1.7 for cloudy/stormy
+                    } elseif ($cloudCover < 25) {
+                        $gustFactor -= 0.1; // Down to 1.4 for clear/stable
+                    }
+
+                    // Adjust based on pressure trend (if available)
+                    if ($previousPressure !== null && $pressure !== null) {
+                        $pressureChange = $previousPressure - $pressure; // Drop = stormier
+                        if ($pressureChange > 1) { // Rapid drop
+                            $gustFactor += 0.2; // Up to 1.9 for stormy
+                        } elseif ($pressureChange < -1) { // Rapid rise
+                            $gustFactor -= 0.1; // Down to 1.4 for stabilizing
+                        }
+                    }
+                    $previousPressure = $pressure;
+
+                    // Use provided gust if available, otherwise estimate
+                    $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor);
+
                     $hourlyData[$date][] = [
                         'time' => $time->format('H:i'),
                         'temperature' => $details['air_temperature'] ?? null,
                         'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
                         'condition' => $next1Hour['summary']['symbol_code'] ?? 'N/A',
-                        'wind_speed' => $details['wind_speed'] ?? null,
-                        'wind_gust' => $details['wind_speed_of_gust'] ?? null, // Yr.no provides this
-                        'pressure' => $details['air_pressure_at_sea_level'] ?? null,
+                        'wind_speed' => $windSpeed,
+                        'wind_gust' => round($windGust, 1), // Round to 1 decimal
+                        'pressure' => $pressure,
                     ];
                 }
             }
-            // Limit to 10 days
             $hourlyData = array_slice($hourlyData, 0, 10, true);
             Log::info("Processed 2-hourly data for {$location->name}", ['hourly' => $hourlyData]);
         }
@@ -137,8 +123,8 @@ class WeatherController extends Controller
 
         $weatherData = [
             'current' => $currentWeather,
-            'hourly' => $hourlyData, // Replacing 'forecast' with 'hourly'
-            'sun_moon' => $sunMoonData, // Replacing 'sun' with 'sun_moon'
+            'hourly' => $hourlyData,
+            'sun_moon' => $sunMoonData,
             'marine' => $marine,
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,

@@ -133,12 +133,16 @@
                                             <td>{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['condition'] }}</td>
                                             <td>{{ $hour['wind_speed'] ?? 'N/A' }}</td>
-                                            <td>{{ $hour['wind_gust'] ?? 'N/A' }}</td>
+                                            <td>{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td>{{ $hour['pressure'] ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
+                            @if ($weatherData['type'] === 'Village' && isset($weatherData['hourly']) && count($weatherData['hourly']) > 0)
+    <!-- ... existing table code ... -->
+    <p class="text-muted fs-12 mt-2">* Gusts estimated based on wind speed and weather conditions.</p>
+@endif
                         @endforeach
                     @elseif ($weatherData['type'] !== 'Marine')
                         <p class="text-muted mt-4">No hourly weather data available.</p>
