@@ -30,9 +30,9 @@
             <div class="card">
                 <div class="card-body text-center">
                     <!-- Current Conditio ns -->
-                    <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
+                    <h4 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
                         {{ $location->name }} ({{ $location->altitude ?? 0 }}m) - Current Conditions
-                    </h5>
+                    </h4>
                     <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
                         <div class="user-img fs-42 flex-shrink-0">
                             <span class="avatar-title {{ $weatherData['type'] === 'Hill' ? 'text-bg-success' : ($weatherData['type'] === 'Marine' ? 'text-bg-info' : 'text-bg-primary') }} rounded-circle fs-22">
