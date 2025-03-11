@@ -41,6 +41,31 @@
             left: 50%;
             transform-origin: center bottom;
         }
+        .forecast-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .forecast-table th, .forecast-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        .forecast-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .forecast-table th, .forecast-table td {
+                padding: 8px;
+                font-size: 14px;
+            }
+            .forecast-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
     </style>
 @endsection
 
@@ -51,8 +76,9 @@
         <div class="col">
             <div class="card">
                 <div class="card-body text-center">
+                    <!-- Current Conditions -->
                     <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
-                        {{ $location->name }} ({{ $weatherData['altitude'] }}m)
+                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m) - Current Conditions
                     </h5>
                     <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
                         <div class="user-img fs-42 flex-shrink-0">
@@ -61,22 +87,22 @@
                             </span>
                         </div>
                         <h3 class="mb-0 fw-bold">
-                            @if (isset($weatherData['weather']))
-                                {{ $weatherData['weather']['air_temperature'] }}°C
+                            @if (isset($weatherData['current']))
+                                {{ $weatherData['current']['air_temperature'] }}°C
                             @else
                                 N/A
                             @endif
                         </h3>
                     </div>
-                    @if (isset($weatherData['weather']))
+                    @if (isset($weatherData['current']))
                         <p class="mb-1 text-muted">
-                            <span class="me-2">Wind: {{ $weatherData['weather']['wind_speed'] }} m/s</span>
-                            <span>Humidity: {{ $weatherData['weather']['relative_humidity'] }}%</span>
+                            <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] }} m/s</span>
+                            <span>Humidity: {{ $weatherData['current']['relative_humidity'] }}%</span>
                         </p>
                     @endif
                     @if ($weatherData['type'] === 'Marine' && isset($weatherData['marine']))
                         <hr class="my-2">
-                        <h6 class="text-muted fs-14">Marine Forecast</h6>
+                        <h6 class="text-muted fs-14">Current Marine Conditions</h6>
                         <p class="mb-1 text-muted fs-12">
                             <span class="fw-semibold">Sea Temp:</span> {{ $weatherData['marine']['water_temperature'] ?? 'N/A' }}°C
                         </p>
@@ -101,8 +127,6 @@
                         <p class="mb-1 text-muted fs-12">
                             <span class="fw-semibold">Swell Period:</span> {{ $weatherData['marine']['swell_wave_period'] ?? 'N/A' }} s
                         </p>
-
-                        <!-- Wave Height Graphic -->
                         <div class="wave-graphic">
                             <div>
                                 <div class="wave-bar" style="height: {{ ($weatherData['marine']['wave_height'] ?? 0) * 20 }}px;"></div>
@@ -117,14 +141,41 @@
                                 <div class="wave-label">Swell</div>
                             </div>
                         </div>
-
-                        <!-- Wave Direction Arrow -->
                         @if (isset($weatherData['marine']['wave_direction']))
                             <div class="wave-direction">
                                 <div class="wave-arrow" style="transform: translate(-50%, -50%) rotate({{ $weatherData['marine']['wave_direction'] }}deg);"></div>
                             </div>
                         @endif
                     @endif
+
+                    <!-- 10-Day Forecast Table -->
+                    <h6 class="text-muted fs-14 mt-4">10-Day Forecast</h6>
+                    <table class="forecast-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Temp (°C)</th>
+                                <th>Wind (m/s)</th>
+                                <th>Humidity (%)</th>
+                                <th>Sunrise</th>
+                                <th>Sunset</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($weatherData['forecast'] as $day)
+                                <?php $dateOnly = \Carbon\Carbon::parse($day['date'])->toDateString(); ?>
+                                <tr>
+                                    <td>{{ \Carbon\Carbon::parse($day['date'])->format('M d') }}</td>
+                                    <td>{{ $day['temperature'] ?? 'N/A' }}</td>
+                                    <td>{{ $day['wind_speed'] ?? 'N/A' }}</td>
+                                    <td>{{ $day['humidity'] ?? 'N/A' }}</td>
+                                    <td>{{ $weatherData['sun'][$dateOnly]['sunrise'] ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunrise'])->format('H:i') : 'N/A' }}</td>
+                                    <td>{{ $weatherData['sun'][$dateOnly]['sunset'] ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunset'])->format('H:i') : 'N/A' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+
                     <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light mt-3">Back to Dashboard</a>
                 </div>
             </div>
