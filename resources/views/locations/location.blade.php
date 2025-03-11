@@ -40,24 +40,24 @@
                             </span>
                         </div>
                         <h3 class="mb-0 fw-bold">
-                            @if (!empty($weatherData['current']) && isset($weatherData['current']['air_temperature']))
+                            @if (isset($weatherData['current']['air_temperature']))
                                 {{ $weatherData['current']['air_temperature'] }}°C
                             @else
                                 N/A
                             @endif
                         </h3>
                     </div>
-                    @if (!empty($weatherData['current']))
+                    @if (isset($weatherData['current']))
                         <p class="mb-1 text-muted">
                             <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] ?? 'N/A' }} m/s</span>
                             <span>Humidity: {{ $weatherData['current']['relative_humidity'] ?? 'N/A' }}%</span>
                         </p>
                     @endif
-                    @if ($weatherData['type'] === 'Marine' && !empty($weatherData['marine']))
+                    @if ($weatherData['type'] === 'Marine' && isset($weatherData['marine']))
                         <hr class="my-2">
                         <h6 class="text-muted fs-14">Current Marine Conditions</h6>
                         <p class="mb-1 text-muted fs-12">
-                            <span class="fw-semibold">Sea Surface Temp:</span> {{ $weatherData['marine']['sea_surface_temperature'] ?? 'N/A' }}°C <!-- Updated label and key -->
+                            <span class="fw-semibold">Sea Surface Temp:</span> {{ $weatherData['marine']['sea_surface_temperature'] ?? 'N/A' }}°C
                         </p>
                         <p class="mb-1 text-muted fs-12">
                             <span class="fw-semibold">Wave Height:</span> {{ $weatherData['marine']['wave_height'] ?? 'N/A' }} m
@@ -102,7 +102,7 @@
                     @endif
 
                     <!-- 10-Day Forecast Table -->
-                    @if (!empty($weatherData['forecast']))
+                    @if (isset($weatherData['forecast']) && count($weatherData['forecast']) > 0)
                         <h6 class="text-muted fs-14 mt-4">10-Day Forecast</h6>
                         <table class="forecast-table">
                             <thead>
@@ -123,8 +123,8 @@
                                         <td>{{ $day['temperature'] ?? 'N/A' }}</td>
                                         <td>{{ $day['wind_speed'] ?? 'N/A' }}</td>
                                         <td>{{ $day['humidity'] ?? 'N/A' }}</td>
-                                        <td>{{ !empty($weatherData['sun'][$dateOnly]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunrise'])->format('H:i') : 'N/A' }}</td>
-                                        <td>{{ !empty($weatherData['sun'][$dateOnly]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunset'])->format('H:i') : 'N/A' }}</td>
+                                        <td>{{ isset($weatherData['sun'][$dateOnly]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunrise'])->format('H:i') : 'N/A' }}</td>
+                                        <td>{{ isset($weatherData['sun'][$dateOnly]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun'][$dateOnly]['sunset'])->format('H:i') : 'N/A' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -133,8 +133,19 @@
                         <p class="text-muted mt-4">No forecast data available.</p>
                     @endif
 
+                    <!-- Debug Output (Remove After Testing) -->
+                    <pre style="text-align: left; font-size: 12px; background: #f8f9fa; padding: 10px; margin-top: 20px;">
+                        Debug: Current = {{ json_encode($weatherData['current'], JSON_PRETTY_PRINT) }}
+                        Debug: Forecast = {{ json_encode($weatherData['forecast'], JSON_PRETTY_PRINT) }}
+                    </pre>
+
                     <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light mt-3">Back to Dashboard</a>
                 </div>
             </div>
         </div><!-- end col -->
     </div><!-- end row -->
+@endsection
+
+@section('scripts')
+    @vite(['resources/js/pages/dashboard-sales.js'])
+@endsection
