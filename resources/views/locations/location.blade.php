@@ -29,7 +29,7 @@
         <div class="col">
             <div class="card">
                 <div class="card-body text-center">
-                    <!-- Current Conditions -->
+                    <!-- Current Conditio ns -->
                     <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
                         {{ $location->name }} ({{ $location->altitude ?? 0 }}m) - Current Conditions
                     </h5>
