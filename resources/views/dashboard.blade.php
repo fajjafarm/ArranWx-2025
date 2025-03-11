@@ -19,7 +19,9 @@
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
-                                    {{ $location->name }} ({{ $weatherData[$location->name]['altitude'] }}m)
+                                    <a href="{{ route('location.show', $location->name) }}" class="link-reset">
+                                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m)
+                                    </a>
                                 </h5>
                                 <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
                                     <div class="user-img fs-42 flex-shrink-0">

@@ -17,12 +17,12 @@ class WeatherController extends Controller
     public function index()
     {
         $locations = Location::all();
-        $weatherData = [];
-
+        $weatherData = []; // Keep this for consistency, but we'll pass $locations separately
+    
         foreach ($locations as $location) {
             $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
             $weatherDetails = $weather['properties']['timeseries'][0]['data']['instant']['details'];
-
+    
             $marine = null;
             if ($location->type === 'Marine') {
                 $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
@@ -39,24 +39,24 @@ class WeatherController extends Controller
                     ];
                 }
             }
-
+    
             $weatherData[$location->name] = [
                 'weather' => $weatherDetails,
                 'marine' => $marine,
                 'type' => $location->type,
-                'altitude' => $location->altitude,
+                'altitude' => $location->altitude ?? 0, // Default to 0 if null
             ];
         }
-
-        return view('dashboard', compact('weatherData', 'location'));
+    
+        return view('dashboard', compact('weatherData', 'locations'));
     }
-
+    
     public function show($name)
     {
         $location = Location::where('name', $name)->firstOrFail();
         $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
         $weatherDetails = $weather['properties']['timeseries'][0]['data']['instant']['details'];
-
+    
         $marine = null;
         if ($location->type === 'Marine') {
             $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
@@ -73,14 +73,13 @@ class WeatherController extends Controller
                 ];
             }
         }
-
+    
         $weatherData = [
             'weather' => $weatherDetails,
             'marine' => $marine,
             'type' => $location->type,
-            'altitude' => $location->altitude,
+            'altitude' => $location->altitude ?? 0, // Default to 0 if null
         ];
-
+    
         return view('location', compact('location', 'weatherData'));
     }
-}
