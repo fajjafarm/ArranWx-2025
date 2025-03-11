@@ -6,6 +6,8 @@
 
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
+    <!-- Weather Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
     <style>
         .wave-graphic { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 20px; }
         .wave-bar { width: 20px; background-color: #3498db; transition: height 0.3s; }
@@ -16,9 +18,11 @@
         .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; }
         .hourly-table th { background-color: #f8f9fa; font-weight: bold; }
         .day-header { background-color: #e9ecef; font-size: 16px; padding: 10px; text-align: left; margin-top: 20px; }
+        .weather-icon { font-size: 24px; color: #555; }
         @media (max-width: 768px) {
             .hourly-table { display: block; overflow-x: auto; white-space: nowrap; }
             .hourly-table th, .hourly-table td { padding: 6px; font-size: 12px; }
+            .weather-icon { font-size: 18px; }
         }
     </style>
 @endsection
@@ -127,11 +131,47 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($hours as $hour)
+                                        <?php
+                                            $condition = $hour['condition'];
+                                            $isNight = strpos($condition, '_night') !== false;
+                                            $iconMap = [
+                                                'clearsky_day' => 'wi-day-sunny',
+                                                'clearsky_night' => 'wi-night-clear',
+                                                'fair_day' => 'wi-day-sunny-overcast',
+                                                'fair_night' => 'wi-night-partly-cloudy',
+                                                'partlycloudy_day' => 'wi-day-cloudy',
+                                                'partlycloudy_night' => 'wi-night-alt-cloudy',
+                                                'cloudy' => 'wi-cloudy',
+                                                'rain' => 'wi-rain',
+                                                'rainshowers_day' => 'wi-day-showers',
+                                                'rainshowers_night' => 'wi-night-alt-showers',
+                                                'lightrain' => 'wi-sprinkle',
+                                                'lightrainshowers_day' => 'wi-day-sprinkle',
+                                                'lightrainshowers_night' => 'wi-night-alt-sprinkle',
+                                                'heavyrain' => 'wi-rain-wind',
+                                                'heavyrainshowers_day' => 'wi-day-rain',
+                                                'heavyrainshowers_night' => 'wi-night-alt-rain',
+                                                'snow' => 'wi-snow',
+                                                'snowshowers_day' => 'wi-day-snow',
+                                                'snowshowers_night' => 'wi-night-alt-snow',
+                                                'lightsnow' => 'wi-snowflake-cold',
+                                                'lightsnowshowers_day' => 'wi-day-snow-wind',
+                                                'lightsnowshowers_night' => 'wi-night-alt-snow-wind',
+                                                'sleet' => 'wi-sleet',
+                                                'sleetsnowers_day' => 'wi-day-sleet',
+                                                'sleetsnowers_night' => 'wi-night-alt-sleet',
+                                                'thunder' => 'wi-thunderstorm',
+                                                'rainandthunder' => 'wi-storm-showers',
+                                                'snowandthunder' => 'wi-snow-thunderstorm',
+                                                'fog' => 'wi-fog'
+                                            ];
+                                            $iconClass = $iconMap[$condition] ?? 'wi-na'; // Fallback icon
+                                        ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
                                             <td>{{ $hour['temperature'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['precipitation'] ?? 'N/A' }}</td>
-                                            <td>{{ $hour['condition'] }}</td>
+                                            <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
                                             <td>{{ $hour['wind_speed'] ?? 'N/A' }}</td>
                                             <td>{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td>{{ $hour['pressure'] ?? 'N/A' }}</td>
