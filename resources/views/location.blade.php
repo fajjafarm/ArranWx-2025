@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
     <style>
         .wave-graphic { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 20px; }
-        .wave-bar { width: 20px; background-color: #3498db; transition: height 0.3s; }
+        .wave-bar { width: 20px; background-color: #3498db; transition: height: 0.3s; }
         .wave-label { text-align: center; font-size: 12px; color: #666; }
         .wave-direction { width: 50px; height: 50px; position: relative; margin: 20px auto; }
         .wave-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #e74c3c; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
@@ -120,58 +120,40 @@
                         <h6 class="text-muted fs-14 mt-4">Hourly Weather Forecast (Every 2 Hours)</h6>
                         @foreach ($weatherData['hourly'] as $date => $hours)
                             <?php
-                                // Min/Max for vertical flow
-                                $windSpeeds = array_filter(array_column($hours, 'wind_speed'), 'is_numeric');
-                                $windGusts = array_filter(array_column($hours, 'wind_gust'), 'is_numeric');
-                                $temps = array_filter(array_column($hours, 'temperature'), 'is_numeric');
-                                $rains = array_filter(array_column($hours, 'precipitation'), 'is_numeric');
-                                $pressures = array_filter(array_column($hours, 'pressure'), 'is_numeric');
-
-                                $minWind = !empty($windSpeeds) ? min($windSpeeds) : 0;
-                                $maxWind = !empty($windSpeeds) ? max($windSpeeds) : 0;
-                                $minGust = !empty($windGusts) ? min($windGusts) : 0;
-                                $maxGust = !empty($windGusts) ? max($windGusts) : 0;
-                                $minTemp = !empty($temps) ? min($temps) : -10;
-                                $maxTemp = !empty($temps) ? max($temps) : 30;
-                                $minRain = !empty($rains) ? min($rains) : 0;
-                                $maxRain = !empty($rains) ? max($rains) : 10;
-                                $minPressure = !empty($pressures) ? min($pressures) : 970;
-                                $maxPressure = !empty($pressures) ? max($pressures) : 1030;
-
                                 // Beaufort Scale
                                 $beaufortRanges = [
-                                    0 => ['max' => 0.5, 'desc' => 'Calm', 'colorStart' => '#e6ffe6', 'colorEnd' => '#e6ffe6'],
-                                    1 => ['max' => 1.5, 'desc' => 'Light Air', 'colorStart' => '#ccffcc', 'colorEnd' => '#b3ffb3'],
-                                    2 => ['max' => 3.3, 'desc' => 'Light Breeze', 'colorStart' => '#b3ffb3', 'colorEnd' => '#99ff99'],
-                                    3 => ['max' => 5.5, 'desc' => 'Gentle Breeze', 'colorStart' => '#99ff99', 'colorEnd' => '#80ff80'],
-                                    4 => ['max' => 7.9, 'desc' => 'Moderate Breeze', 'colorStart' => '#80ff80', 'colorEnd' => '#66ff66'],
-                                    5 => ['max' => 10.7, 'desc' => 'Fresh Breeze', 'colorStart' => '#ffff99', 'colorEnd' => '#ffeb3b'],
-                                    6 => ['max' => 13.8, 'desc' => 'Strong Breeze', 'colorStart' => '#ffeb3b', 'colorEnd' => '#ffd700'],
-                                    7 => ['max' => 17.1, 'desc' => 'Near Gale', 'colorStart' => '#ffcc80', 'colorEnd' => '#ff9800'],
-                                    8 => ['max' => 20.7, 'desc' => 'Gale', 'colorStart' => '#ff9800', 'colorEnd' => '#ff6666'],
-                                    9 => ['max' => 24.4, 'desc' => 'Strong Gale', 'colorStart' => '#ff6666', 'colorEnd' => '#ff3333'],
-                                    10 => ['max' => 28.4, 'desc' => 'Storm', 'colorStart' => '#ff3333', 'colorEnd' => '#cc0000'],
-                                    11 => ['max' => 32.6, 'desc' => 'Violent Storm', 'colorStart' => '#cc0000', 'colorEnd' => '#990000'],
-                                    12 => ['max' => PHP_FLOAT_MAX, 'desc' => 'Hurricane Force', 'colorStart' => '#990000', 'colorEnd' => '#800000']
+                                    0 => ['max' => 0.5, 'desc' => 'Calm', 'color' => '#e6ffe6'],
+                                    1 => ['max' => 1.5, 'desc' => 'Light Air', 'color' => '#ccffcc'],
+                                    2 => ['max' => 3.3, 'desc' => 'Light Breeze', 'color' => '#b3ffb3'],
+                                    3 => ['max' => 5.5, 'desc' => 'Gentle Breeze', 'color' => '#99ff99'],
+                                    4 => ['max' => 7.9, 'desc' => 'Moderate Breeze', 'color' => '#80ff80'],
+                                    5 => ['max' => 10.7, 'desc' => 'Fresh Breeze', 'color' => '#ffff99'],
+                                    6 => ['max' => 13.8, 'desc' => 'Strong Breeze', 'color' => '#ffeb3b'],
+                                    7 => ['max' => 17.1, 'desc' => 'Near Gale', 'color' => '#ffcc80'],
+                                    8 => ['max' => 20.7, 'desc' => 'Gale', 'color' => '#ff9800'],
+                                    9 => ['max' => 24.4, 'desc' => 'Strong Gale', 'color' => '#ff6666'],
+                                    10 => ['max' => 28.4, 'desc' => 'Storm', 'color' => '#ff3333'],
+                                    11 => ['max' => 32.6, 'desc' => 'Violent Storm', 'color' => '#cc0000'],
+                                    12 => ['max' => PHP_FLOAT_MAX, 'desc' => 'Hurricane Force', 'color' => '#800000']
                                 ];
 
                                 // Temperature Scale (every 3°C)
                                 $tempRanges = [
-                                    ['min' => -10, 'max' => -7, 'colorStart' => '#00b7eb', 'colorEnd' => '#33c4f0'],
-                                    ['min' => -6.9, 'max' => -4, 'colorStart' => '#33c4f0', 'colorEnd' => '#66d1f5'],
-                                    ['min' => -3.9, 'max' => -1, 'colorStart' => '#66d1f5', 'colorEnd' => '#99ebff'],
-                                    ['min' => -0.9, 'max' => 2, 'colorStart' => '#99ebff', 'colorEnd' => '#b3f0ff'],
-                                    ['min' => 2.1, 'max' => 5, 'colorStart' => '#b3f0ff', 'colorEnd' => '#ccffcc'],
-                                    ['min' => 5.1, 'max' => 8, 'colorStart' => '#ccffcc', 'colorEnd' => '#e6ffe6'],
-                                    ['min' => 8.1, 'max' => 11, 'colorStart' => '#e6ffe6', 'colorEnd' => '#ffffcc'],
-                                    ['min' => 11.1, 'max' => 14, 'colorStart' => '#ffffcc', 'colorEnd' => '#fff099'],
-                                    ['min' => 14.1, 'max' => 17, 'colorStart' => '#fff099', 'colorEnd' => '#ffeb3b'],
-                                    ['min' => 17.1, 'max' => 20, 'colorStart' => '#ffeb3b', 'colorEnd' => '#ffd700'],
-                                    ['min' => 20.1, 'max' => 23, 'colorStart' => '#ffd700', 'colorEnd' => '#ffcc80'],
-                                    ['min' => 23.1, 'max' => 26, 'colorStart' => '#ffcc80', 'colorEnd' => '#ff9966'],
-                                    ['min' => 26.1, 'max' => 29, 'colorStart' => '#ff9966', 'colorEnd' => '#ff6666'],
-                                    ['min' => 29.1, 'max' => 32, 'colorStart' => '#ff6666', 'colorEnd' => '#ff3333'],
-                                    ['min' => 32.1, 'max' => PHP_FLOAT_MAX, 'colorStart' => '#ff3333', 'colorEnd' => '#cc0000']
+                                    ['min' => -10, 'max' => -7, 'color' => '#00b7eb'],
+                                    ['min' => -6.9, 'max' => -4, 'color' => '#33c4f0'],
+                                    ['min' => -3.9, 'max' => -1, 'color' => '#66d1f5'],
+                                    ['min' => -0.9, 'max' => 2, 'color' => '#99ebff'],
+                                    ['min' => 2.1, 'max' => 5, 'color' => '#b3f0ff'],
+                                    ['min' => 5.1, 'max' => 8, 'color' => '#ccffcc'],
+                                    ['min' => 8.1, 'max' => 11, 'color' => '#e6ffe6'],
+                                    ['min' => 11.1, 'max' => 14, 'color' => '#ffffcc'],
+                                    ['min' => 14.1, 'max' => 17, 'color' => '#fff099'],
+                                    ['min' => 17.1, 'max' => 20, 'color' => '#ffeb3b'],
+                                    ['min' => 20.1, 'max' => 23, 'color' => '#ffd700'],
+                                    ['min' => 23.1, 'max' => 26, 'color' => '#ffcc80'],
+                                    ['min' => 26.1, 'max' => 29, 'color' => '#ff9966'],
+                                    ['min' => 29.1, 'max' => 32, 'color' => '#ff6666'],
+                                    ['min' => 32.1, 'max' => PHP_FLOAT_MAX, 'color' => '#ff3333']
                                 ];
                             ?>
                             <div class="day-header">
@@ -231,80 +213,80 @@
                                             ];
                                             $iconClass = $iconMap[$condition] ?? 'wi-na';
 
-                                            // Wind Speed Gradient
+                                            // Wind Speed Color
                                             $windSpeed = $hour['wind_speed'] ?? 0;
                                             $windBeaufortLevel = 0;
                                             $windBeaufortDesc = 'N/A';
-                                            $windGradient = 'background: #e6ffe6;';
+                                            $windColor = 'background: #e6ffe6;';
                                             if (is_numeric($windSpeed)) {
                                                 foreach ($beaufortRanges as $level => $range) {
                                                     if ($windSpeed <= $range['max']) {
                                                         $windBeaufortLevel = $level;
                                                         $windBeaufortDesc = $range['desc'];
-                                                        $windGradient = "background: linear-gradient(to bottom, {$range['colorStart']}, {$range['colorEnd']});";
+                                                        $windColor = "background: {$range['color']};";
                                                         break;
                                                     }
                                                 }
                                             }
 
-                                            // Wind Gust Gradient
+                                            // Wind Gust Color
                                             $windGust = $hour['wind_gust'] ?? 0;
                                             $gustBeaufortLevel = 0;
                                             $gustBeaufortDesc = 'N/A';
-                                            $gustGradient = 'background: #e6ffe6;';
+                                            $gustColor = 'background: #e6ffe6;';
                                             if (is_numeric($windGust)) {
                                                 foreach ($beaufortRanges as $level => $range) {
                                                     if ($windGust <= $range['max']) {
                                                         $gustBeaufortLevel = $level;
                                                         $gustBeaufortDesc = $range['desc'];
-                                                        $gustGradient = "background: linear-gradient(to bottom, {$range['colorStart']}, {$range['colorEnd']});";
+                                                        $gustColor = "background: {$range['color']};";
                                                         break;
                                                     }
                                                 }
                                             }
 
-                                            // Temperature Gradient
+                                            // Temperature Color
                                             $temp = $hour['temperature'] ?? null;
-                                            $tempGradient = 'background: #e6ffe6;';
+                                            $tempColor = 'background: #e6ffe6;';
                                             if (is_numeric($temp)) {
                                                 foreach ($tempRanges as $range) {
                                                     if ($temp >= $range['min'] && $temp <= $range['max']) {
-                                                        $tempGradient = "background: linear-gradient(to bottom, {$range['colorStart']}, {$range['colorEnd']});";
+                                                        $tempColor = "background: {$range['color']};";
                                                         break;
                                                     }
                                                 }
                                             }
 
-                                            // Rainfall Gradient
+                                            // Rainfall Color
                                             $rain = $hour['precipitation'] ?? 0;
-                                            $rainGradient = 'background: #e6ffe6;';
+                                            $rainColor = 'background: #e6ffe6;';
                                             if (is_numeric($rain)) {
-                                                if ($rain <= 0) $rainGradient = 'background: linear-gradient(to bottom, #e6ffe6, #e6ffe6);';
-                                                elseif ($rain <= 2) $rainGradient = 'background: linear-gradient(to bottom, #e6ffe6, #99ebff);';
-                                                elseif ($rain <= 5) $rainGradient = 'background: linear-gradient(to bottom, #99ebff, #00b7eb);';
-                                                elseif ($rain <= 10) $rainGradient = 'background: linear-gradient(to bottom, #00b7eb, #0066cc);';
-                                                else $rainGradient = 'background: linear-gradient(to bottom, #0066cc, #0066cc);';
+                                                if ($rain == 0) $rainColor = 'background: #e6ffe6;';
+                                                elseif ($rain <= 2) $rainColor = 'background: #99ebff;';
+                                                elseif ($rain <= 5) $rainColor = 'background: #00b7eb;';
+                                                elseif ($rain <= 10) $rainColor = 'background: #0066cc;';
+                                                else $rainColor = 'background: #003d99;';
                                             }
 
-                                            // Pressure Gradient
+                                            // Pressure Color
                                             $pressure = $hour['pressure'] ?? null;
-                                            $pressureGradient = 'background: #e6ffe6;';
+                                            $pressureColor = 'background: #e6ffe6;';
                                             if (is_numeric($pressure)) {
-                                                if ($pressure <= 970) $pressureGradient = 'background: linear-gradient(to bottom, #ff6666, #ff6666);';
-                                                elseif ($pressure <= 990) $pressureGradient = 'background: linear-gradient(to bottom, #ff6666, #ffcc80);';
-                                                elseif ($pressure <= 1010) $pressureGradient = 'background: linear-gradient(to bottom, #ffcc80, #ccffcc);';
-                                                elseif ($pressure <= 1030) $pressureGradient = 'background: linear-gradient(to bottom, #ccffcc, #99ebff);';
-                                                else $pressureGradient = 'background: linear-gradient(to bottom, #99ebff, #99ebff);';
+                                                if ($pressure < 970) $pressureColor = 'background: #ff6666;';
+                                                elseif ($pressure <= 990) $pressureColor = 'background: #ffcc80;';
+                                                elseif ($pressure <= 1010) $pressureColor = 'background: #ccffcc;';
+                                                elseif ($pressure <= 1030) $pressureColor = 'background: #99ebff;';
+                                                else $pressureColor = 'background: #66d1f5;';
                                             }
                                         ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
-                                            <td style="{{ $tempGradient }}">{{ $hour['temperature'] ?? 'N/A' }}</td>
-                                            <td style="{{ $rainGradient }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
+                                            <td style="{{ $tempColor }}">{{ $hour['temperature'] ?? 'N/A' }}</td>
+                                            <td style="{{ $rainColor }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
-                                            <td style="{{ $windGradient }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
-                                            <td style="{{ $gustGradient }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
-                                            <td style="{{ $pressureGradient }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
+                                            <td style="{{ $windColor }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
+                                            <td style="{{ $gustColor }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
+                                            <td style="{{ $pressureColor }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -317,53 +299,53 @@
                             <h6 class="text-muted fs-14">Beaufort Scale Key (Wind & Gusts)</h6>
                             <table>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #e6ffe6, #e6ffe6);">0: Calm (< 0.5 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ccffcc, #b3ffb3);">1: Light Air (0.5–1.5 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #b3ffb3, #99ff99);">2: Light Breeze (1.6–3.3 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #99ff99, #80ff80);">3: Gentle Breeze (3.4–5.5 m/s)</td>
+                                    <td style="background: #e6ffe6;">0: Calm (< 0.5 m/s)</td>
+                                    <td style="background: #ccffcc;">1: Light Air (0.5–1.5 m/s)</td>
+                                    <td style="background: #b3ffb3;">2: Light Breeze (1.6–3.3 m/s)</td>
+                                    <td style="background: #99ff99;">3: Gentle Breeze (3.4–5.5 m/s)</td>
                                 </tr>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #80ff80, #66ff66);">4: Moderate Breeze (5.6–7.9 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ffff99, #ffeb3b);">5: Fresh Breeze (8.0–10.7 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ffeb3b, #ffd700);">6: Strong Breeze (10.8–13.8 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ffcc80, #ff9800);">7: Near Gale (13.9–17.1 m/s)</td>
+                                    <td style="background: #80ff80;">4: Moderate Breeze (5.6–7.9 m/s)</td>
+                                    <td style="background: #ffff99;">5: Fresh Breeze (8.0–10.7 m/s)</td>
+                                    <td style="background: #ffeb3b;">6: Strong Breeze (10.8–13.8 m/s)</td>
+                                    <td style="background: #ffcc80;">7: Near Gale (13.9–17.1 m/s)</td>
                                 </tr>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #ff9800, #ff6666);">8: Gale (17.2–20.7 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ff6666, #ff3333);">9: Strong Gale (20.8–24.4 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #ff3333, #cc0000);">10: Storm (24.5–28.4 m/s)</td>
-                                    <td style="background: linear-gradient(to bottom, #cc0000, #990000);">11: Violent Storm (28.5–32.6 m/s)</td>
+                                    <td style="background: #ff9800;">8: Gale (17.2–20.7 m/s)</td>
+                                    <td style="background: #ff6666;">9: Strong Gale (20.8–24.4 m/s)</td>
+                                    <td style="background: #ff3333;">10: Storm (24.5–28.4 m/s)</td>
+                                    <td style="background: #cc0000;">11: Violent Storm (28.5–32.6 m/s)</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="4" style="background: linear-gradient(to bottom, #990000, #800000);">12: Hurricane Force (> 32.6 m/s)</td>
+                                    <td colspan="4" style="background: #800000;">12: Hurricane Force (> 32.6 m/s)</td>
                                 </tr>
                             </table>
                         </div>
 
-                        <!-- Additional Gradient Keys -->
+                        <!-- Additional Color Keys -->
                         <div class="gradient-key">
                             <h6 class="text-muted fs-14">Temperature Key (°C)</h6>
                             <table>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #00b7eb, #33c4f0);">-10 to -7</td>
-                                    <td style="background: linear-gradient(to bottom, #33c4f0, #66d1f5);">-7 to -4</td>
-                                    <td style="background: linear-gradient(to bottom, #66d1f5, #99ebff);">-4 to -1</td>
-                                    <td style="background: linear-gradient(to bottom, #99ebff, #b3f0ff);">-1 to 2</td>
-                                    <td style="background: linear-gradient(to bottom, #b3f0ff, #ccffcc);">2.1 to 5</td>
+                                    <td style="background: #00b7eb;">-10 to -7</td>
+                                    <td style="background: #33c4f0;">-6.9 to -4</td>
+                                    <td style="background: #66d1f5;">-3.9 to -1</td>
+                                    <td style="background: #99ebff;">-0.9 to 2</td>
+                                    <td style="background: #b3f0ff;">2.1 to 5</td>
                                 </tr>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #ccffcc, #e6ffe6);">5.1 to 8</td>
-                                    <td style="background: linear-gradient(to bottom, #e6ffe6, #ffffcc);">8.1 to 11</td>
-                                    <td style="background: linear-gradient(to bottom, #ffffcc, #fff099);">11.1 to 14</td>
-                                    <td style="background: linear-gradient(to bottom, #fff099, #ffeb3b);">14.1 to 17</td>
-                                    <td style="background: linear-gradient(to bottom, #ffeb3b, #ffd700);">17.1 to 20</td>
+                                    <td style="background: #ccffcc;">5.1 to 8</td>
+                                    <td style="background: #e6ffe6;">8.1 to 11</td>
+                                    <td style="background: #ffffcc;">11.1 to 14</td>
+                                    <td style="background: #fff099;">14.1 to 17</td>
+                                    <td style="background: #ffeb3b;">17.1 to 20</td>
                                 </tr>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #ffd700, #ffcc80);">20.1 to 23</td>
-                                    <td style="background: linear-gradient(to bottom, #ffcc80, #ff9966);">23.1 to 26</td>
-                                    <td style="background: linear-gradient(to bottom, #ff9966, #ff6666);">26.1 to 29</td>
-                                    <td style="background: linear-gradient(to bottom, #ff6666, #ff3333);">29.1 to 32</td>
-                                    <td style="background: linear-gradient(to bottom, #ff3333, #cc0000);">> 32</td>
+                                    <td style="background: #ffd700;">20.1 to 23</td>
+                                    <td style="background: #ffcc80;">23.1 to 26</td>
+                                    <td style="background: #ff9966;">26.1 to 29</td>
+                                    <td style="background: #ff6666;">29.1 to 32</td>
+                                    <td style="background: #ff3333;">> 32</td>
                                 </tr>
                             </table>
                         </div>
@@ -371,11 +353,11 @@
                             <h6 class="text-muted fs-14">Rainfall Key (mm)</h6>
                             <table>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #e6ffe6, #e6ffe6);">0 (Dry)</td>
-                                    <td style="background: linear-gradient(to bottom, #e6ffe6, #99ebff);">0 to 2</td>
-                                    <td style="background: linear-gradient(to bottom, #99ebff, #00b7eb);">2 to 5</td>
-                                    <td style="background: linear-gradient(to bottom, #00b7eb, #0066cc);">5 to 10</td>
-                                    <td style="background: linear-gradient(to bottom, #0066cc, #0066cc);">> 10 (Heavy)</td>
+                                    <td style="background: #e6ffe6;">0 (Dry)</td>
+                                    <td style="background: #99ebff;">0.1 to 2</td>
+                                    <td style="background: #00b7eb;">2.1 to 5</td>
+                                    <td style="background: #0066cc;">5.1 to 10</td>
+                                    <td style="background: #003d99;">> 10 (Heavy)</td>
                                 </tr>
                             </table>
                         </div>
@@ -383,11 +365,11 @@
                             <h6 class="text-muted fs-14">Pressure Key (hPa)</h6>
                             <table>
                                 <tr>
-                                    <td style="background: linear-gradient(to bottom, #ff6666, #ff6666);">< 970 (Stormy)</td>
-                                    <td style="background: linear-gradient(to bottom, #ff6666, #ffcc80);">970 to 990</td>
-                                    <td style="background: linear-gradient(to bottom, #ffcc80, #ccffcc);">990 to 1010</td>
-                                    <td style="background: linear-gradient(to bottom, #ccffcc, #99ebff);">1010 to 1030</td>
-                                    <td style="background: linear-gradient(to bottom, #99ebff, #99ebff);">> 1030 (Clear)</td>
+                                    <td style="background: #ff6666;">< 970 (Stormy)</td>
+                                    <td style="background: #ffcc80;">970 to 990</td>
+                                    <td style="background: #ccffcc;">990 to 1010</td>
+                                    <td style="background: #99ebff;">1010 to 1030</td>
+                                    <td style="background: #66d1f5;">> 1030 (Clear)</td>
                                 </tr>
                             </table>
                         </div>
