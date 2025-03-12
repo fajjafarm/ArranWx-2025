@@ -28,7 +28,7 @@
         .status-amber { background-color: #ff8c00; }
         .status-red { background-color: #dc3545; }
     </style>
-@endsection
+
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <style>
         .separator {
