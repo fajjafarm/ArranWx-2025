@@ -17,7 +17,7 @@ class WeatherController extends Controller
 
     public function index()
     {
-        {
+        
             // Simulated ferry status data (replace with real data source)
             $brodickArdrossanStatus = [
                 'class' => 'status-red', // No service until 28 April 2025
