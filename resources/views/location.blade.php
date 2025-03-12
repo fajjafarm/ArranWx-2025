@@ -6,7 +6,7 @@
 
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
-    <!-- Weather Icons CDN -->
+    <!-- Weather Icons C DN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
     <style>
         .wave-graphic { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 20px; }
