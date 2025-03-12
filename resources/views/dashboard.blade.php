@@ -58,9 +58,11 @@
         <div class="col">
         <div class="ferry-status-box">
             <div class="card">
-                <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
+            <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
+                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
                     <h6 class="mb-1">Brodick - Ardrossan</h6>
                     <p class="mb-0">{{ $brodickArdrossanStatus['text'] }}</p>
+                    <span class="timestamp">Last updated: {{ $brodickArdrossanStatus['updated'] }}</span>
                 </div>
             </div>
         </div>
@@ -68,13 +70,30 @@
         <!-- Brodick to Troon --><div class="col">
         <div class="ferry-status-box">
             <div class="card">
-                <div class="card-body {{ $brodickTroonStatus['class'] }}">
+            <div class="card-body {{ $brodickTroonStatus['class'] }}">
+                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
                     <h6 class="mb-1">Brodick - Troon</h6>
                     <p class="mb-0">{{ $brodickTroonStatus['text'] }}</p>
+                    <span class="timestamp">Last updated: {{ $brodickTroonStatus['updated'] }}</span>
                 </div>
             </div>
         </div>
-    </div></div></div>
+    </div>
+    <div class="col">
+        <div class="ferry-status-box">
+            <div class="card">
+            <div class="card-body {{ $lochranzaClaonaigStatus['class'] }}">
+                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
+                    <h6 class="mb-1">Lochranza - Claonaig</h6>
+                    <p class="mb-0">{{ $lochranzaClaonaigStatus['text'] }}</p>
+                    <span class="timestamp">Last updated: {{ $lochranzaClaonaigStatus['updated'] }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div></div>
     <div class="row">
         <div class="col">
             <!-- Village Locations -->

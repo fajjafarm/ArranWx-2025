@@ -18,16 +18,36 @@ class WeatherController extends Controller
     public function index()
     {
         
-            // Simulated ferry status data (replace with real data source)
-            $brodickArdrossanStatus = [
-                'class' => 'status-red', // No service until 28 April 2025
-                'text' => 'No Service (Until 28 Apr)'
+            // Simulated ferry status data for March 12, 2025
+        $brodickArdrossanStatus = [
+            'class' => 'status-red',
+            'text' => 'No Service (Until 28 Apr)',
+            'updated' => Carbon::create(2025, 1, 13, 5, 37, 0, 'GMT')->format('d M Y H:i') // Web ID: 12
+        ];
+
+        $brodickTroonStatus = [
+            'class' => 'status-amber',
+            'text' => 'Disrupted (Maintenance)',
+            'updated' => Carbon::create(2025, 3, 12, 12, 0, 0, 'GMT')->format('d M Y H:i') // Simulated X post today
+        ];
+
+        $lochranzaClaonaigStatus = [
+            'class' => 'status-green',
+            'text' => 'Normal Service',
+            'updated' => Carbon::create(2025, 3, 10, 11, 49, 0, 'GMT')->format('d M Y H:i') // Last X post (Post ID: 1)
+        ];
+
+        // Dynamic logic example (replace with real data source)
+        /*
+        $now = now();
+        if ($now->isSameDay(Carbon::create(2025, 3, 10))) {
+            $lochranzaClaonaigStatus = [
+                'class' => 'status-amber',
+                'text' => 'Disrupted (Wind)',
+                'updated' => $now->format('d M Y H:i')
             ];
-    
-            $brodickTroonStatus = [
-                'class' => 'status-amber', // Based on X post: MV Alfred sailings cancelled today
-                'text' => 'Disrupted (Maintenance)'
-            ];
+        }
+        */
     
             // Example logic for dynamic status (uncomment and adapt if you have a data source)
             /*
@@ -88,7 +108,7 @@ class WeatherController extends Controller
         }
 
         Log::info("Weather data sent to dashboard view", $weatherData);
-        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus'));
+        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus'));
     }
 
     public function show($name)
