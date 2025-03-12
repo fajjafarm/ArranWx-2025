@@ -54,6 +54,8 @@
         <h5 class="text-muted fs-14 mt-4 mb-3 text-center">CalMac Ferry Status - {{ now()->format('d M Y') }}</h5>
 
         <!-- Brodick to Ardrossan -->
+        <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
+        <div class="col">
         <div class="ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
@@ -62,8 +64,8 @@
                 </div>
             </div>
         </div>
-
-        <!-- Brodick to Troon -->
+    </div>
+        <!-- Brodick to Troon --><div class="col">
         <div class="ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $brodickTroonStatus['class'] }}">
@@ -72,7 +74,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div></div></div>
     <div class="row">
         <div class="col">
             <!-- Village Locations -->
