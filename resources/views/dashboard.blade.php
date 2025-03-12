@@ -1,7 +1,7 @@
 @extends('layouts.vertical', ['title' => 'Dashboard'])
 
 @section('css')
-    @vite(['resources/css/app.css']) <!-- Adjust if you have specific CSS -->
+  <!-- Adjust if you have specific CSS -->
     <style>
         .ferry-status-box {
             width: 200px;
