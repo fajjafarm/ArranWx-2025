@@ -16,27 +16,81 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
+
+
+    public function warnings(Request $request)
+    {
+        // Simulated API response; replace with real data
+        $data = [
+            'metOffice' => [
+                'class' => 'weather-no-warning',
+                'text' => 'No Warnings',
+                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            ],
+            'meteogram' => [
+                'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
+                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            ],
+            'sepaFlood' => [
+                'class' => 'weather-no-warning',
+                'text' => 'No Warnings',
+                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            ]
+        ];
+
+        // Example dynamic logic (replace with API calls)
+        /*
+        if (rand(0, 1)) {
+            $data['metOffice'] = ['class' => 'status-yellow', 'text' => 'Yellow Warning', 'updated' => Carbon::now('GMT')->format('d M Y H:i')];
+            $data['sepaFlood'] = ['class' => 'status-amber', 'text' => '2 Alerts', 'updated' => Carbon::now('GMT')->format('d M Y H:i')];
+        }
+        */
+
+        return response()->json($data);
+    }
+
+
     public function index()
     {
         
-            // Simulated ferry status data for March 12, 2025
         $brodickArdrossanStatus = [
             'class' => 'status-red',
-            'text' => 'No Service (Until 28 Apr)',
-            'updated' => Carbon::create(2025, 1, 13, 5, 37, 0, 'GMT')->format('d M Y H:i') // Web ID: 12
+            'text' => 'No Service',
+            'updated' => Carbon::create(2025, 1, 13, 5, 37, 0, 'GMT')->format('d M Y H:i')
         ];
 
         $brodickTroonStatus = [
             'class' => 'status-amber',
-            'text' => 'Disrupted (Maintenance)',
-            'updated' => Carbon::create(2025, 3, 12, 12, 0, 0, 'GMT')->format('d M Y H:i') // Simulated X post today
+            'text' => 'Disrupted',
+            'updated' => Carbon::create(2025, 3, 12, 12, 0, 0, 'GMT')->format('d M Y H:i')
         ];
 
         $lochranzaClaonaigStatus = [
             'class' => 'status-green',
-            'text' => 'Normal Service',
-            'updated' => Carbon::create(2025, 3, 10, 11, 49, 0, 'GMT')->format('d M Y H:i') // Last X post (Post ID: 1)
+            'text' => 'Normal',
+            'updated' => Carbon::create(2025, 3, 10, 11, 49, 0, 'GMT')->format('d M Y H:i')
         ];
+
+        $metOfficeWarning = [
+            'class' => 'weather-no-warning',
+            'text' => 'No Warnings',
+            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+        ];
+
+        $meteogram = [
+            'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
+            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+        ];
+
+        $sepaFloodWarning = [
+            'class' => 'weather-no-warning',
+            'text' => 'No Warnings',
+            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+        ];
+
+       
+    
+
 
         // Dynamic logic example (replace with real data source)
         /*
@@ -109,7 +163,8 @@ class WeatherController extends Controller
         }
 
         Log::info("Weather data sent to dashboard view", $weatherData);
-        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus'));
+        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus',
+            'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
     }
 
     public function show($name)

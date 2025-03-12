@@ -343,4 +343,34 @@
 
 @section('scripts')
     @vite(['resources/js/pages/dashboard-sales.js'])
+    <script>
+        function updateWarnings() {
+            fetch('/dashboard/warnings')
+                .then(response => response.json())
+                .then(data => {
+                    // Update Met Office Warnings
+                    const metOfficeCard = document.querySelector('.weather-warning-box .card-body');
+                    metOfficeCard.className = 'card-body ' + data.metOffice.class;
+                    metOfficeCard.querySelector('h3').textContent = data.metOffice.text;
+                    metOfficeCard.querySelector('.timestamp').textContent = 'Last updated: ' + data.metOffice.updated;
+
+                    // Update Meteogram (placeholder URL)
+                    document.getElementById('meteogram-image').src = data.meteogram.imageUrl || 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder';
+                    document.querySelector('.meteogram-box .timestamp').textContent = 'Last updated: ' + data.meteogram.updated;
+
+                    // Update SEPA Flood Warnings
+                    const sepaCard = document.querySelector('.flood-warning-box .card-body');
+                    sepaCard.className = 'card-body ' + data.sepaFlood.class;
+                    sepaCard.querySelector('h3').textContent = data.sepaFlood.text;
+                    sepaCard.querySelector('.timestamp').textContent = 'Last updated: ' + data.sepaFlood.updated;
+                })
+                .catch(error => console.error('Error updating warnings:', error));
+        }
+
+        // Initial update
+        updateWarnings();
+
+        // Auto-update every 15 minutes (900,000 ms)
+        setInterval(updateWarnings, 900000);
+    </script>
 @endsection
