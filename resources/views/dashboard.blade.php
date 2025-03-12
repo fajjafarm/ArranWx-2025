@@ -6,20 +6,16 @@
 
 @section('css')
 
+        <!-- Iconify for ferry icon -->
+        <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
     <style>
         .ferry-status-box {
             width: 200px;
-            height: 150px;
             margin: 10px;
             display: inline-block;
             vertical-align: top;
         }
         .ferry-status-box .card-body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
             color: #fff; /* White text for contrast */
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Improve readability */
         }
@@ -27,6 +23,21 @@
         .status-yellow { background-color: #ffc107; }
         .status-amber { background-color: #ff8c00; }
         .status-red { background-color: #dc3545; }
+        .ferry-status-box .avatar-title {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ferry-status-box .text-muted {
+            color: #e0e0e0 !important; /* Lighten muted text on colored background */
+        }
+        .ferry-status-box .timestamp {
+            font-size: 10px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
     </style>
 
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
@@ -49,51 +60,82 @@
 
 @section('content')
     @include('layouts.partials.page-title', ['subtitle' => 'Weather', 'title' => 'Arran Weather Dashboard'])
-    <!-- Ferry Status Section -->
-    <div class="row justify-content-center">
+<!-- Ferry Status Section -->
+<div class="row justify-content-center">
         <h5 class="text-muted fs-14 mt-4 mb-3 text-center">CalMac Ferry Status - {{ now()->format('d M Y') }}</h5>
 
         <!-- Brodick to Ardrossan -->
-        <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
-        <div class="col">
         <div class="ferry-status-box">
             <div class="card">
-            <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
-                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
-                    <h6 class="mb-1">Brodick - Ardrossan</h6>
-                    <p class="mb-0">{{ $brodickArdrossanStatus['text'] }}</p>
-                    <span class="timestamp">Last updated: {{ $brodickArdrossanStatus['updated'] }}</span>
+                <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
+                    <h5 class="text-muted fs-13 text-uppercase" title="Brodick - Ardrossan">
+                        Brodick - Ardrossan
+                    </h5>
+                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                        <div class="user-img fs-42 flex-shrink-0">
+                            <span class="avatar-title bg-white text-dark rounded-circle fs-22">
+                                <iconify-icon icon="mdi:ferry"></iconify-icon>
+                            </span>
+                        </div>
+                        <h3 class="mb-0 fw-bold">
+                            {{ $brodickArdrossanStatus['text'] }}
+                        </h3>
+                    </div>
+                    <p class="mb-1 text-muted timestamp">
+                        Last updated: {{ $brodickArdrossanStatus['updated'] }}
+                    </p>
                 </div>
             </div>
         </div>
-    </div>
-        <!-- Brodick to Troon --><div class="col">
-        <div class="ferry-status-box">
-            <div class="card">
-            <div class="card-body {{ $brodickTroonStatus['class'] }}">
-                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
-                    <h6 class="mb-1">Brodick - Troon</h6>
-                    <p class="mb-0">{{ $brodickTroonStatus['text'] }}</p>
-                    <span class="timestamp">Last updated: {{ $brodickTroonStatus['updated'] }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="ferry-status-box">
-            <div class="card">
-            <div class="card-body {{ $lochranzaClaonaigStatus['class'] }}">
-                    <iconify-icon icon="mdi:ferry" class="ferry-icon"></iconify-icon>
-                    <h6 class="mb-1">Lochranza - Claonaig</h6>
-                    <p class="mb-0">{{ $lochranzaClaonaigStatus['text'] }}</p>
-                    <span class="timestamp">Last updated: {{ $lochranzaClaonaigStatus['updated'] }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
+        <!-- Brodick to Troon -->
+        <div class="ferry-status-box">
+            <div class="card">
+                <div class="card-body {{ $brodickTroonStatus['class'] }}">
+                    <h5 class="text-muted fs-13 text-uppercase" title="Brodick - Troon">
+                        Brodick - Troon
+                    </h5>
+                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                        <div class="user-img fs-42 flex-shrink-0">
+                            <span class="avatar-title bg-white text-dark rounded-circle fs-22">
+                                <iconify-icon icon="mdi:ferry"></iconify-icon>
+                            </span>
+                        </div>
+                        <h3 class="mb-0 fw-bold">
+                            {{ $brodickTroonStatus['text'] }}
+                        </h3>
+                    </div>
+                    <p class="mb-1 text-muted timestamp">
+                        Last updated: {{ $brodickTroonStatus['updated'] }}
+                    </p>
+                </div>
+            </div>
+        </div>
 
-</div></div>
+        <!-- Lochranza to Claonaig -->
+        <div class="ferry-status-box">
+            <div class="card">
+                <div class="card-body {{ $lochranzaClaonaigStatus['class'] }}">
+                    <h5 class="text-muted fs-13 text-uppercase" title="Lochranza - Claonaig">
+                        Lochranza - Claonaig
+                    </h5>
+                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                        <div class="user-img fs-42 flex-shrink-0">
+                            <span class="avatar-title bg-white text-dark rounded-circle fs-22">
+                                <iconify-icon icon="mdi:ferry"></iconify-icon>
+                            </span>
+                        </div>
+                        <h3 class="mb-0 fw-bold">
+                            {{ $lochranzaClaonaigStatus['text'] }}
+                        </h3>
+                    </div>
+                    <p class="mb-1 text-muted timestamp">
+                        Last updated: {{ $lochranzaClaonaigStatus['updated'] }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <div class="col">
             <!-- Village Locations -->
