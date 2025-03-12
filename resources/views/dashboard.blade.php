@@ -6,34 +6,41 @@
 
 @section('css')
 
-        <!-- Iconify for ferry icon -->
-        <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+            <!-- Iconify for icons -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
     <style>
-        .ferry-status-box {
+        .ferry-status-box, .weather-warning-box, .flood-warning-box {
             width: 200px;
             margin: 10px;
             display: inline-block;
             vertical-align: top;
         }
-        .ferry-status-box .card-body {
-            color: #fff; /* White text for contrast */
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Improve readability */
+        .meteogram-box {
+            width: 600px; /* Wider for chart */
+            margin: 10px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .card-body {
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
         .status-normal { background-color: #28a745; }
         .status-yellow { background-color: #ffc107; }
         .status-amber { background-color: #ff8c00; }
         .status-red { background-color: #dc3545; }
-        .ferry-status-box .avatar-title {
+        .weather-no-warning { background-color: #6c757d; } /* Grey for no warnings */
+        .avatar-title {
             width: 42px;
             height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .ferry-status-box .text-muted {
-            color: #e0e0e0 !important; /* Lighten muted text on colored background */
+        .text-muted {
+            color: #e0e0e0 !important;
         }
-        .ferry-status-box .timestamp {
+        .timestamp {
             font-size: 10px;
             margin-top: 5px;
             opacity: 0.8;
@@ -132,6 +139,58 @@
                     <p class="mb-1 text-muted timestamp">
                         Last updated: {{ $lochranzaClaonaigStatus['updated'] }}
                     </p>
+                </div>
+            </div>
+                <!-- Weather and Flood Warnings Section -->
+    <div class="row justify-content-center" id="warnings-section">
+        <h5 class="text-muted fs-14 mt-4 mb-3 text-center">Weather & Flood Warnings - {{ now()->format('d M Y') }}</h5>
+
+        <!-- Met Office Weather Warnings -->
+        <div class="weather-warning-box">
+            <div class="card">
+                <div class="card-body {{ $metOfficeWarning['class'] }}">
+                    <h5 class="text-muted fs-13 text-uppercase" title="Met Office Weather Warnings">Met Office Warnings</h5>
+                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                        <div class="user-img fs-42 flex-shrink-0">
+                            <span class="avatar-title bg-white text-dark rounded-circle fs-22">
+                                <iconify-icon icon="mdi:weather-partly-cloudy"></iconify-icon>
+                            </span>
+                        </div>
+                        <h3 class="mb-0 fw-bold">{{ $metOfficeWarning['text'] }}</h3>
+                    </div>
+                    <p class="mb-1 text-muted timestamp">Last updated: {{ $metOfficeWarning['updated'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meteogram -->
+        <div class="meteogram-box">
+            <div class="card">
+                <div class="card-body" style="background-color: #f8f9fa; padding: 10px;">
+                    <h5 class="text-muted fs-13 text-uppercase" title="Meteogram">Meteogram (Arran)</h5>
+                    <div class="text-center">
+                        <!-- Placeholder; replace with actual meteogram -->
+                        <img src="https://via.placeholder.com/580x100?text=Meteogram+Placeholder" alt="Meteogram" id="meteogram-image" style="max-width: 100%;">
+                    </div>
+                    <p class="mb-1 text-muted timestamp">Last updated: {{ $meteogram['updated'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEPA Flood Warnings -->
+        <div class="flood-warning-box">
+            <div class="card">
+                <div class="card-body {{ $sepaFloodWarning['class'] }}">
+                    <h5 class="text-muted fs-13 text-uppercase" title="SEPA Flood Warnings">SEPA Flood Warnings</h5>
+                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                        <div class="user-img fs-42 flex-shrink-0">
+                            <span class="avatar-title bg-white text-dark rounded-circle fs-22">
+                                <iconify-icon icon="mdi:flood"></iconify-icon>
+                            </span>
+                        </div>
+                        <h3 class="mb-0 fw-bold">{{ $sepaFloodWarning['text'] }}</h3>
+                    </div>
+                    <p class="mb-1 text-muted timestamp">Last updated: {{ $sepaFloodWarning['updated'] }}</p>
                 </div>
             </div>
         </div>
