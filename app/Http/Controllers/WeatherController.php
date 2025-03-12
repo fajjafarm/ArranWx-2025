@@ -17,6 +17,38 @@ class WeatherController extends Controller
 
     public function index()
     {
+        {
+            // Simulated ferry status data (replace with real data source)
+            $brodickArdrossanStatus = [
+                'class' => 'status-red', // No service until 28 April 2025
+                'text' => 'No Service (Until 28 Apr)'
+            ];
+    
+            $brodickTroonStatus = [
+                'class' => 'status-amber', // Based on X post: MV Alfred sailings cancelled today
+                'text' => 'Disrupted (Maintenance)'
+            ];
+    
+            // Example logic for dynamic status (uncomment and adapt if you have a data source)
+            /*
+            $today = now()->format('d M');
+            if ($today === '12 Mar') {
+                $brodickTroonStatus = [
+                    'class' => 'status-amber',
+                    'text' => 'Disrupted (Maintenance)'
+                ];
+            } elseif (someConditionForYellow()) {
+                $brodickTroonStatus = [
+                    'class' => 'status-yellow',
+                    'text' => 'At Risk'
+                ];
+            } else {
+                $brodickTroonStatus = [
+                    'class' => 'status-green',
+                    'text' => 'Normal Service'
+                ];
+            }
+            */
         $locations = Location::all();
         $weatherData = [];
 
@@ -56,7 +88,7 @@ class WeatherController extends Controller
         }
 
         Log::info("Weather data sent to dashboard view", $weatherData);
-        return view('dashboard', compact('weatherData', 'locations'));
+        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus'));
     }
 
     public function show($name)
