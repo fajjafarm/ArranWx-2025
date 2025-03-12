@@ -5,6 +5,7 @@ use App\Services\WeatherService;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class WeatherController extends Controller
 {
