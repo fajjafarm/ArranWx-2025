@@ -167,9 +167,9 @@
                                 <thead>
                                     <tr>
                                         <th>Time</th>
+                                        <th>Condition</th>
                                         <th>Temp (°C)</th>
                                         <th>Rain (mm)</th>
-                                        <th>Condition</th>
                                         <th>Wind (m/s)</th>
                                         <th>Gusts (m/s)</th>
                                         <th>Pressure (hPa)</th>
@@ -281,9 +281,9 @@
                                         ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
+                                            <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
                                             <td style="{{ $tempColor }}">{{ $hour['temperature'] ?? 'N/A' }}</td>
                                             <td style="{{ $rainColor }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
-                                            <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
                                             <td style="{{ $windColor }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
                                             <td style="{{ $gustColor }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td style="{{ $pressureColor }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
