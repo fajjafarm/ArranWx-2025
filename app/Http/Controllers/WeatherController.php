@@ -234,7 +234,7 @@ class WeatherController extends Controller
                         'time' => $time->format('H:i'),
                         'temperature' => $details['air_temperature'] ?? null,
                         'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
-                        'condition' => $next6Hour['summary']['symbol_code'] ?? 'N/A',
+                        'condition' => $next1Hour['summary']['symbol_code'] ?? $next6Hour['summary']['symbol_code'],
                         'wind_speed' => $windSpeed,
                         'wind_gust' => round($windGust, 1),
                         'pressure' => $pressure,
