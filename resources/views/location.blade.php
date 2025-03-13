@@ -178,10 +178,7 @@
                                 <tbody>
                                     @foreach ($hours as $hour)
                                         <?php
-                                              $condition = isset($hour['next_6_hours']['summary']['symbol_code']) 
-                                              ? $hour['next_6_hours']['summary']['symbol_code'] 
-                                              : ($hour['condition'] ?? 'N/A');
-
+                                            $condition = $hour['condition'];
                                             $isNight = strpos($condition, '_night') !== false;
                                             $iconMap = [
                                                 'clearsky_day' => 'wi-day-sunny',
