@@ -195,8 +195,9 @@ class WeatherController extends Controller
                     $date = $time->toDateString();
                     $details = $entry['data']['instant']['details'];
                     $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
-                    $next6Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
-
+                    if ($next1Hour['summary']['symbol_code'] == 'N/A'){
+                    $next1our = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                    }
                     // Calculate Gust
                     $windSpeed = $details['wind_speed'] ?? 0;
                     $cloudCover = $details['cloud_area_fraction'] ?? 0;
