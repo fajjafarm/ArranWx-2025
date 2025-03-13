@@ -178,8 +178,8 @@
                                 <tbody>
                                     @foreach ($hours as $hour)
                                         <?php
-                                                        $condition = $hour['condition'] ?? 'N/A';
-                                                        if ($condition === 'N/A' && isset($hour['next_6_hours']['summary']['symbol_code'])) {
+                                                       
+                                                        if (isset($hour['next_6_hours']['summary']['symbol_code'])) {
                                                             $condition = $hour['next_6_hours']['summary']['symbol_code'];
                                                         }
 
