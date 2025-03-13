@@ -194,14 +194,8 @@ class WeatherController extends Controller
                 if ($time->minute === 0 && $time->hour % 2 === 0) {
                     $date = $time->toDateString();
                     $details = $entry['data']['instant']['details'];
-                    $condition = 'N/A';
-            if (isset($timeseries['data']['next_1_hours']['summary']['symbol_code'])) {
-                $condition = $timeseries['data']['next_1_hours']['summary']['symbol_code'];
-            } elseif (isset($timeseries['data']['next_6_hours']['summary']['symbol_code'])) {
-                $condition = $timeseries['data']['next_6_hours']['summary']['symbol_code'];
-            }
-            
-             $next1Hour = $condition , 'details' => ['precipitation_amount' => 0];
+                    $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                    $next6Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
 
                     // Calculate Gust
                     $windSpeed = $details['wind_speed'] ?? 0;
@@ -240,7 +234,7 @@ class WeatherController extends Controller
                         'time' => $time->format('H:i'),
                         'temperature' => $details['air_temperature'] ?? null,
                         'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
-                        'condition' => $next1Hour['summary']['symbol_code'] ?? 'N/A',
+                        'condition' => $next1Hour['summary']['symbol_code'] ?? $next6Hour['summary']['symbol_code'],
                         'wind_speed' => $windSpeed,
                         'wind_gust' => round($windGust, 1),
                         'pressure' => $pressure,
