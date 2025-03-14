@@ -256,7 +256,9 @@ class WeatherController extends Controller
                 'sunset' => $sunMoon['sunset'],
                 'moonrise' => $sunMoon['moonrise'],
                 'moonset' => $sunMoon['moonset'],
+                'moonphase' => $entry['moonphase'] ?? null // Moon phase value (e.g., 0-1 or descriptive)
             ];
+            
         }
         Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
 
