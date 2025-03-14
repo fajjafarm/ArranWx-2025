@@ -156,12 +156,53 @@
                                     ['min' => 32.1, 'max' => PHP_FLOAT_MAX, 'color' => '#ff3333']
                                 ];
                             ?>
-                            <div class="day-header">
+ <div class="day-header">
                                 {{ \Carbon\Carbon::parse($date)->format('l, M d') }}
                                 <span><i class="wi wi-sunrise sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunrise'])->format('H:i') : 'N/A' }}</span>
                                 <span><i class="wi wi-sunset sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['sunset'])->format('H:i') : 'N/A' }}</span>
                                 <span><i class="wi wi-moonrise sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['moonrise']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonrise'])->format('H:i') : 'N/A' }}</span>
                                 <span><i class="wi wi-moonset sun-moon-icon"></i> {{ isset($weatherData['sun_moon'][$date]['moonset']) ? \Carbon\Carbon::parse($weatherData['sun_moon'][$date]['moonset'])->format('H:i') : 'N/A' }}</span>
+                                <span>
+                                    <?php
+                                        $moonPhase = $weatherData['sun_moon'][$date]['moonphase'] ?? null;
+                                        $moonIcon = 'wi-na'; // Default if no phase
+                                        if (is_numeric($moonPhase)) {
+                                            switch (true) {
+                                                case $moonPhase < 0.05:
+                                                    $moonIcon = 'wi-moon-new';
+                                                    break;
+                                                case $moonPhase < 0.15:
+                                                    $moonIcon = 'wi-moon-waxing-crescent-3';
+                                                    break;
+                                                case $moonPhase < 0.25:
+                                                    $moonIcon = 'wi-moon-first-quarter';
+                                                    break;
+                                                case $moonPhase < 0.35:
+                                                    $moonIcon = 'wi-moon-waxing-gibbous-3';
+                                                    break;
+                                                case $moonPhase < 0.45:
+                                                    $moonIcon = 'wi-moon-waxing-gibbous-6';
+                                                    break;
+                                                case $moonPhase < 0.55:
+                                                    $moonIcon = 'wi-moon-full';
+                                                    break;
+                                                case $moonPhase < 0.65:
+                                                    $moonIcon = 'wi-moon-waning-gibbous-3';
+                                                    break;
+                                                case $moonPhase < 0.75:
+                                                    $moonIcon = 'wi-moon-third-quarter';
+                                                    break;
+                                                case $moonPhase < 0.85:
+                                                    $moonIcon = 'wi-moon-waning-crescent-3';
+                                                    break;
+                                                default:
+                                                    $moonIcon = 'wi-moon-waning-crescent-6';
+                                                    break;
+                                            }
+                                        }
+                                    ?>
+                                    <i class="wi {{ $moonIcon }} sun-moon-icon"></i> {{ $moonPhase !== null ? number_format($moonPhase, 2) : 'N/A' }}
+                                </span>
                             </div>
                             <table class="hourly-table">
                                 <thead>
