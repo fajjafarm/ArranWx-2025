@@ -35,7 +35,16 @@
         }
     </style>
 @endsection
+<body>
 
+    <div class="wrapper">
+
+        @include('layouts.partials.sidenav')
+        @include('layouts.partials.topbar')
+
+
+        <div class="page-content">
+            <div class="page-container">
 @section('content')
     @include('layouts.partials.page-title', ['subtitle' => 'Weather Details', 'title' => $location->name])
 
@@ -428,3 +437,16 @@
 @section('scripts')
     @vite(['resources/js/pages/dashboard-sales.js'])
 @endsection
+
+</div>
+            @include('layouts.partials.footer')
+        </div>
+
+    </div>
+
+    @include('layouts.partials.customizer')
+
+    @include('layouts.partials.footer-scripts')
+</body>
+
+</html>
