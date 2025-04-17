@@ -119,7 +119,7 @@
             </div>
         </div>
 
-        <!-- Lochranza to Claonaig -->
+        <!-- Lochranza to Claonai g -->
         <div class="col-md-4 ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $lochranzaClaonaigStatus['class'] }}">
