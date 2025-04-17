@@ -1,9 +1,6 @@
 <!-- resources/views/location.blade.php -->
 @extends('layouts.vertical', ['title' => $location->name . ' Weather'])
 
-@section('html-attribute')
-    data-sidenav-size="full"
-@endsection
 
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
