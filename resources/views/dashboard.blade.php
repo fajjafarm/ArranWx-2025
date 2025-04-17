@@ -23,7 +23,7 @@
         }
         .card-body {
             color: #fff;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+           
         }
         .status-normal { background-color: #28a745; }
         .status-yellow { background-color: #ffc107; }
