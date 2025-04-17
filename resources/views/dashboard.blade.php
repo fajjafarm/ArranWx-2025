@@ -199,181 +199,218 @@
         </div>
     </div>
     <div class="row">
-        <div class="col">
-            <!-- Village Locations -->
-            <div class="section-title">
-                <iconify-icon icon="solar:buildings-bold-duotone" class="fs-24"></iconify-icon>
-                Villages
-            </div>
-            <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
-                @foreach ($locations->where('type', 'Village') as $location)
-                    <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
-                                    <a href="{{ route('location.show', $location->name) }}" class="link-reset">
-                                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m)
-                                    </a>
-                                </h5>
-                                <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
-                                    <div class="user-img fs-42 flex-shrink-0">
-                                        <span class="avatar-title text-bg-primary rounded-circle fs-22">
-                                            <iconify-icon icon="solar:buildings-bold-duotone"></iconify-icon>
-                                        </span>
-                                    </div>
-                                    <h3 class="mb-0 fw-bold">
-                                        @if (isset($weatherData[$location->name]['weather']))
-                                            {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
-                                        @else
-                                            N/A
-                                        @endif
-                                    </h3>
-                                </div>
-                                @if (isset($weatherData[$location->name]['weather']))
-                                    <p class="mb-1 text-muted">
-                                        <span class="me-2">Wind: {{ $weatherData[$location->name]['weather']['wind_speed'] }} m/s</span>
-                                        <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
-                                    </p>
-                                @endif
+    <div class="col">
+        <!-- Village Locations -->
+        <div class="section-title">
+            <iconify-icon icon="solar:│buildings-bold-duotone" class="fs-24"></iconify-icon>
+            Villages
+        </div>
+        <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
+            @foreach ($locations->where('type', 'Village') as $location)
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Unit Selection Row -->
+                            <div class="unit-selection mb-2 d-flex justify-content-center gap-2 flex-wrap">
+                                <select class="form-select form-select-sm temp-unit" style="width: auto;">
+                                    <option value="celsius" selected>°C</option>
+                                    <option value="fahrenheit">°F</option>
+                                </select>
+                                <select class="form-select form-select-sm speed-unit" style="width: auto;">
+                                    <option value="mph" selected>mph</option>
+                                    <option value="kph">kph</option>
+                                    <option value="knots">knots</option>
+                                    <option value="ms">m/s</option>
+                                </select>
+                                <select class="form-select form-select-sm rain-unit" style="width: auto;">
+                                    <option value="mm" selected>mm</option>
+                                    <option value="inches">inches</option>
+                                </select>
+                                <select class="form-select form-select-sm altitude-unit" style="width: auto;">
+                                    <option value="meters" selected>m</option>
+                                    <option value="feet">ft</option>
+                                </select>
                             </div>
-                        </div>
-                    </div><!-- end col -->
-                @endforeach
-            </div><!-- end row -->
-
-            <!-- Separator -->
-            <hr class="separator">
-
-            <!-- Hill Locations -->
-            <div class="section-title">
-                <iconify-icon icon="solar:mountains-bold-duotone" class="fs-24"></iconify-icon>
-                Hills
-            </div>
-            <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
-                @foreach ($locations->where('type', 'Hill') as $location)
-                    <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
-                                    <a href="{{ route('location.show', $location->name) }}" class="link-reset">
-                                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m)
-                                    </a>
-                                </h5>
-                                <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
-                                    <div class="user-img fs-42 flex-shrink-0">
-                                        <span class="avatar-title text-bg-success rounded-circle fs-22">
-                                            <iconify-icon icon="solar:mountains-bold-duotone"></iconify-icon>
-                                        </span>
-                                    </div>
-                                    <h3 class="mb-0 fw-bold">
-                                        @if (isset($weatherData[$location->name]['weather']))
-                                            {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
-                                        @else
-                                            N/A
-                                        @endif
-                                    </h3>
+                            <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
+                                <a href="{{ route('location.show', $location->name) }}" class="link-reset">
+                                    {{ $location->name }} (<span class="altitude" data-altitude-meters="{{ $location->altitude ?? 0 }}">{{ $location->altitude ?? 0 }}m</span>)
+                                </a>
+                            </h5>
+                            <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                                <div class="user-img fs-42 flex-shrink-0">
+                                    <span class="avatar-title text-bg-primary rounded-circle fs-22">
+                                        <iconify-icon icon="solar:buildings-bold-duotone"></iconify-icon>
+                                    </span>
                                 </div>
-                                @if (isset($weatherData[$location->name]['weather']))
-                                    <p class="mb-1 text-muted">
-                                        <span class="me-2">Wind: {{ $weatherData[$location->name]['weather']['wind_speed'] }} m/s</span>
-                                        <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
-                                    </p>
-                                @endif
+                                <h3 class="mb-0 fw-bold temperature" data-temp-celsius="{{ isset($weatherData[$location->name]['weather']) ? $weatherData[$location->name]['weather']['air_temperature'] : 'N/A' }}">
+                                    @if (isset($weatherData[$location->name]['weather']))
+                                        {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
+                                    @else
+                                        N/A
+                                    @endif
+                                </h3>
                             </div>
+                            @if (isset($weatherData[$location->name]['weather']))
+                                <p class="mb-1 text-muted">
+                                    <span class="me-2 wind-speed" data-speed-ms="{{ $weatherData[$location->name]['weather']['wind_speed'] }}">Wind: {{ round($weatherData[$location->name]['weather']['wind_speed'] * 2.23694, 1) }} mph</span>
+                                    <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
+                                </p>
+                                <p class="mb-1 text-muted precipitation" data-precip-mm="{{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }}">
+                                    Rain: {{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }} {{ $weatherData[$location->name]['weather']['precipitation_amount'] !== 'N/A' ? 'mm' : '' }}
+                                </p>
+                            @endif
                         </div>
-                    </div><!-- end col -->
-                @endforeach
-            </div><!-- end row -->
+                    </div>
+                </div><!-- end col -->
+            @endforeach
+        </div><!-- end row -->
 
-            <!-- Separator -->
-            <hr class="separator">
+        <!-- Separator -->
+        <hr class="separator">
 
-            <!-- Marine Locations -->
-            <div class="section-title">
-                <iconify-icon icon="solar:water-bold-duotone" class="fs-24"></iconify-icon>
-                Marine Areas
-            </div>
-            <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
-                @foreach ($locations->where('type', 'Marine') as $location)
-                    <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
-                                    <a href="{{ route('location.show', $location->name) }}" class="link-reset">
-                                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m)
-                                    </a>
-                                </h5>
-                                <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
-                                    <div class="user-img fs-42 flex-shrink-0">
-                                        <span class="avatar-title text-bg-info rounded-circle fs-22">
-                                            <iconify-icon icon="solar:water-bold-duotone"></iconify-icon>
-                                        </span>
-                                    </div>
-                                    <h3 class="mb-0 fw-bold">
-                                        @if (isset($weatherData[$location->name]['weather']))
-                                            {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
-                                        @else
-                                            N/A
-                                        @endif
-                                    </h3>
+        <!-- Hill Locations -->
+        <div class="section-title">
+            <iconify-icon icon="solar:mountains-bold-duotone" class="fs-24"></iconify-icon>
+            Hills
+        </div>
+        <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
+            @foreach ($locations->where('type', 'Hill') as $location)
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Unit Selection Row -->
+                            <div class="unit-selection mb-2 d-flex justify-content-center gap-2 flex-wrap">
+                                <select class="form-select form-select-sm temp-unit" style="width: auto;">
+                                    <option value="celsius" selected>°C</option>
+                                    <option value="fahrenheit">°F</option>
+                                </select>
+                                <select class="form-select form-select-sm speed-unit" style="width: auto;">
+                                    <option value="mph" selected>mph</option>
+                                    <option value="kph">kph</option>
+                                    <option value="knots">knots</option>
+                                    <option value="ms">m/s</option>
+                                </select>
+                                <select class="form-select form-select-sm rain-unit" style="width: auto;">
+                                    <option value="mm" selected>mm</option>
+                                    <option value="inches">inches</option>
+                                </select>
+                                <select class="form-select form-select-sm altitude-unit" style="width: auto;">
+                                    <option value="meters" selected>m</option>
+                                    <option value="feet">ft</option>
+                                </select>
+                            </div>
+                            <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
+                                <a href="{{ route('location.show', $location->name) }}" class="link-reset">
+                                    {{ $location->name }} (<span class="altitude" data-altitude-meters="{{ $location->altitude ?? 0 }}">{{ $location->altitude ?? 0 }}m</span>)
+                                </a>
+                            </h5>
+                            <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                                <div class="user-img fs-42 flex-shrink-0">
+                                    <span class="avatar-title text-bg-success rounded-circle fs-22">
+                                        <iconify-icon icon="solar:mountains-bold-duotone"></iconify-icon>
+                                    </span>
                                 </div>
-                                @if (isset($weatherData[$location->name]['weather']))
-                                    <p class="mb-1 text-muted">
-                                        <span class="me-2">Wind: {{ $weatherData[$location->name]['weather']['wind_speed'] }} m/s</span>
-                                        <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
-                                    </p>
-                                @endif
-                                @if (isset($weatherData[$location->name]['marine']))
-                                    <hr class="my-2">
-                                    <p class="mb-1 text-muted fs-12">
-                                        <span class="fw-semibold">Sea Temp:</span> {{ $weatherData[$location->name]['marine']['water_temperature'] ?? 'N/A' }}°C
-                                    </p>
-                                    <p class="mb-1 text-muted fs-12">
-                                        <span class="fw-semibold">Wave Height:</span> {{ $weatherData[$location->name]['marine']['wave_height'] ?? 'N/A' }} m
-                                    </p>
-                                    <p class="mb-1 text-muted fs-12">
-                                        <span class="fw-semibold">Swell Height:</span> {{ $weatherData[$location->name]['marine']['swell_wave_height'] ?? 'N/A' }} m
-                                    </p>
-                                @endif
+                                <h3 class="mb-0 fw-bold temperature" data-temp-celsius="{{ isset($weatherData[$location->name]['weather']) ? $weatherData[$location->name]['weather']['air_temperature'] : 'N/A' }}">
+                                    @if (isset($weatherData[$location->name]['weather']))
+                                        {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
+                                    @else
+                                        N/A
+                                    @endif
+                                </h3>
                             </div>
+                            @if (isset($weatherData[$location->name]['weather']))
+                                <p class="mb-1 text-muted">
+                                    <span class="me-2 wind-speed" data-speed-ms="{{ $weatherData[$location->name]['weather']['wind_speed'] }}">Wind: {{ round($weatherData[$location->name]['weather']['wind_speed'] * 2.23694, 1) }} mph</span>
+                                    <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
+                                </p>
+                                <p class="mb-1 text-muted precipitation" data-precip-mm="{{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }}">
+                                    Rain: {{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }} {{ $weatherData[$location->name]['weather']['precipitation_amount'] !== 'N/A' ? 'mm' : '' }}
+                                </p>
+                            @endif
                         </div>
-                    </div><!-- end col -->
-                @endforeach
-            </div><!-- end row -->
-        </div><!-- end col -->
-    </div><!-- end row -->
-@endsection
+                    </div>
+                </div><!-- end col -->
+            @endforeach
+        </div><!-- end row -->
 
-@section('scripts')
-    @vite(['resources/js/pages/dashboard-sales.js'])
-    <script>
-        function updateWarnings() {
-            fetch('/dashboard/warnings')
-                .then(response => response.json())
-                .then(data => {
-                    // Update Met Office Warnings
-                    const metOfficeCard = document.querySelector('.weather-warning-box .card-body');
-                    metOfficeCard.className = 'card-body ' + data.metOffice.class;
-                    metOfficeCard.querySelector('h3').textContent = data.metOffice.text;
-                    metOfficeCard.querySelector('.timestamp').textContent = 'Last updated: ' + data.metOffice.updated;
+        <!-- Separator -->
+        <hr class="separator">
 
-                    // Update Meteogram (placeholder URL)
-                    document.getElementById('meteogram-image').src = data.meteogram.imageUrl || 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder';
-                    document.querySelector('.meteogram-box .timestamp').textContent = 'Last updated: ' + data.meteogram.updated;
-
-                    // Update SEPA Flood Warnings
-                    const sepaCard = document.querySelector('.flood-warning-box .card-body');
-                    sepaCard.className = 'card-body ' + data.sepaFlood.class;
-                    sepaCard.querySelector('h3').textContent = data.sepaFlood.text;
-                    sepaCard.querySelector('.timestamp').textContent = 'Last updated: ' + data.sepaFlood.updated;
-                })
-                .catch(error => console.error('Error updating warnings:', error));
-        }
-
-        // Initial update
-        updateWarnings();
-
-        // Auto-update every 15 minutes (900,000 ms)
-        setInterval(updateWarnings, 900000);
-    </script>
-@endsection
+        <!-- Marine Locations -->
+        <div class="section-title">
+            <iconify-icon icon="solar:water-bold-duotone" class="fs-24"></iconify-icon>
+            Marine Areas
+        </div>
+        <div class="row row-cols-xxl-4 row-cols-md-2 row-cols-1 text-center">
+            @foreach ($locations->where('type', 'Marine') as $location)
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Unit Selection Row -->
+                            <div class="unit-selection mb-2 d-flex justify-content-center gap-2 flex-wrap">
+                                <select class="form-select form-select-sm temp-unit" style="width: auto;">
+                                    <option value="celsius" selected>°C</option>
+                                    <option value="fahrenheit">°F</option>
+                                </select>
+                                <select class="form-select form-select-sm speed-unit" style="width: auto;">
+                                    <option value="mph" selected>mph</option>
+                                    <option value="kph">kph</option>
+                                    <option value="knots">knots</option>
+                                    <option value="ms">m/s</option>
+                                </select>
+                                <select class="form-select form-select-sm rain-unit" style="width: auto;">
+                                    <option value="mm" selected>mm</option>
+                                    <option value="inches">inches</option>
+                                </select>
+                                <select class="form-select form-select-sm altitude-unit" style="width: auto;">
+                                    <option value="meters" selected>m</option>
+                                    <option value="feet">ft</option>
+                                </select>
+                            </div>
+                            <h5 class="text-muted fs-13 text-uppercase" title="{{ $location->name }}">
+                                <a href="{{ route('location.show', $location->name) }}" class="link-reset">
+                                    {{ $location->name }} (<span class="altitude" data-altitude-meters="{{ $location->altitude ?? 0 }}">{{ $location->altitude ?? 0 }}m</span>)
+                                </a>
+                            </h5>
+                            <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                                <div class="user-img fs-42 flex-shrink-0">
+                                    <span class="avatar-title text-bg-info rounded-circle fs-22">
+                                        <iconify-icon icon="solar:water-bold-duotone"></iconify-icon>
+                                    </span>
+                                </div>
+                                <h3 class="mb-0 fw-bold temperature" data-temp-celsius="{{ isset($weatherData[$location->name]['weather']) ? $weatherData[$location->name]['weather']['air_temperature'] : 'N/A' }}">
+                                    @if (isset($weatherData[$location->name]['weather']))
+                                        {{ $weatherData[$location->name]['weather']['air_temperature'] }}°C
+                                    @else
+                                        N/A
+                                    @endif
+                                </h3>
+                            </div>
+                            @if (isset($weatherData[$location->name]['weather']))
+                                <p class="mb-1 text-muted">
+                                    <span class="me-2 wind-speed" data-speed-ms="{{ $weatherData[$location->name]['weather']['wind_speed'] }}">Wind: {{ round($weatherData[$location->name]['weather']['wind_speed'] * 2.23694, 1) }} mph</span>
+                                    <span>Humidity: {{ $weatherData[$location->name]['weather']['relative_humidity'] }}%</span>
+                                </p>
+                                <p class="mb-1 text-muted precipitation" data-precip-mm="{{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }}">
+                                    Rain: {{ $weatherData[$location->name]['weather']['precipitation_amount'] ?? 'N/A' }} {{ $weatherData[$location->name]['weather']['precipitation_amount'] !== 'N/A' ? 'mm' : '' }}
+                                </p>
+                            @endif
+                            @if (isset($weatherData[$location->name]['marine']))
+                                <hr class="my-2">
+                                <p class="mb-1 text-muted fs-12 sea-temperature" data-temp-celsius="{{ $weatherData[$location->name]['marine']['water_temperature'] ?? 'N/A' }}">
+                                    <span class="fw-semibold">Sea Temp:</span> {{ $weatherData[$location->name]['marine']['water_temperature'] ?? 'N/A' }} {{ $weatherData[$location->name]['marine']['water_temperature'] !== 'N/A' ? '°C' : '' }}
+                                </p>
+                                <p class="mb-1 text-muted fs-12">
+                                    <span class="fw-semibold">Wave Height:</span> {{ $weatherData[$location->name]['marine']['wave_height'] ?? 'N/A' }} m
+                                </p>
+                                <p class="mb-1 text-muted fs-12">
+                                    <span class="fw-semibold">Swell Height:</span> {{ $weatherData[$location->name]['marine']['swell_wave_height'] ?? 'N/A' }} m
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div><!-- end col -->
+            @endforeach
+        </div><!-- end row -->
+    </div><!-- end col -->
+</div><!-- end row -->
