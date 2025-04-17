@@ -72,7 +72,7 @@
     <h5 class="text-muted fs-14 mt-4 mb-3 text-center">CalMac Ferry Status - {{ now()->format('d M Y') }}</h5>
     <div class="row g-3 justify-content-center">
         <!-- Brodick to Ardrossan -->
-        <div class="col-md-4 ferry-status-box">
+        <div class="col-md-3 ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $brodickArdrossanStatus['class'] }}">
                     <h5 class="text-muted fs-13 text-uppercase" title="Brodick - Ardrossan">
@@ -96,7 +96,7 @@
         </div>
 
         <!-- Brodick to Troon -->
-        <div class="col-md-4 ferry-status-box">
+        <div class="col-md-3 ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $brodickTroonStatus['class'] }}">
                     <h5 class="text-muted fs-13 text-uppercase" title="Brodick - Troon">
@@ -120,7 +120,7 @@
         </div>
 
         <!-- Lochranza to Claonai g -->
-        <div class="col-md-4 ferry-status-box">
+        <div class="col-md-3 ferry-status-box">
             <div class="card">
                 <div class="card-body {{ $lochranzaClaonaigStatus['class'] }}">
                     <h5 class="text-muted fs-13 text-uppercase" title="Lochranza - Claonaig">
