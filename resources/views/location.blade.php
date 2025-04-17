@@ -1,7 +1,4 @@
-<!-- resources/views/location.blade.php -->
 @extends('layouts.vertical', ['title' => $location->name . ' Weather'])
-
-
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <!-- Weather Icons CDN -->
@@ -35,7 +32,7 @@
 @endsection
 
 @section('content')
-    @include('layouts.partials.page-title', ['subtitle' => 'Weather Details', 'title' => $location->name])
+    
 
     <div class="row">
         <div class="col">
@@ -421,8 +418,4 @@
             </div>
         </div><!-- end col -->
     </div><!-- end row -->
-@endsection
-
-@section('scripts')
-    @vite(['resources/js/pages/dashboard-sales.js'])
 @endsection
