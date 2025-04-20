@@ -184,7 +184,7 @@
                                                 case $moonPhase < 0.55:
                                                     $moonIcon = 'wi-moon-full';
                                                     break;
-                                                case $ moonPhase < 0.65:
+                                                case $moonPhase < 0.65:
                                                     $moonIcon = 'wi-moon-waning-gibbous-3';
                                                     break;
                                                 case $moonPhase < 0.75:
