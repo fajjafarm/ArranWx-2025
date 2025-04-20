@@ -11,9 +11,30 @@
         .wave-direction { width: 50px; height: 50px; position: relative; margin: 20px auto; }
         .wave-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #e74c3c; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
         .wind-direction { width: 30px; height: 30px; position: relative; margin: 0 auto; display: inline-block; vertical-align: middle; }
-        .wind-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 18px solid #2ecc71; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
+        .wind-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 12px solid #2ecc71;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center bottom;
+            z-index: 2;
+        }
+        .wind-arrow::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 10px;
+            background: #2ecc71;
+            top: -10px; /* Position the tail just above the triangle base */
+            left: -4px; /* Center the tail */
+            z-index: 1;
+        }
         .hourly-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; }
+        .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: middle; }
         .hourly-table th { background-color: #f8f9fa; font-weight: bold; }
         .day-header { background-color: #e9ecef; font-size: 16px; padding: 10px; text-align: left; margin-top: 20px; }
         .weather-icon { font-size: 24px; color: #555; }
@@ -31,7 +52,17 @@
             .day-header span { margin-right: 10px; }
             .beaufort-key td, .gradient-key td { font-size: 10px; padding: 3px; }
             .wind-direction { width: 20px; height: 20px; }
-            .wind-arrow { border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid #2ecc71; }
+            .wind-arrow {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 8px solid #2ecc71;
+            }
+            .wind-arrow::after {
+                width: 6px;
+                height: 6px;
+                top: -6px;
+                left: -3px;
+            }
         }
     </style>
 @endsection
@@ -278,7 +309,7 @@
                                                 foreach ($beaufortRanges as $level => $range) {
                                                     if ($windGust <= $range['max']) {
                                                         $gustBeaufortLevel = $level;
-                                                        $gustBeaufortDesc = $range['desc'];
+                                                        $gustBeaufortDesc = 'range['desc'];
                                                         $gustColor = "background: {$range['color']};";
                                                         break;
                                                     }
@@ -328,11 +359,11 @@
                                             <td style="{{ $gustColor }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td>
                                                 @if (isset($hour['wind_from_direction_degrees']))
-                                                    <div class="wind-direction">
-                                                        <div class="wind-arrow" style="transform: translate(-50%, -50%) rotate({{ $hour['wind_from_direction_degrees'] }}deg);"></div>
+                                                    <div class="wind-direction" title="{{ $hour['wind_direction'] }} ({{ $hour['wind_from_direction_degrees'] }}°)">
+                                                        <div class="wind-arrow" style="transform: translate(-50%, -50%) rotate({{ $hour['wind_from_direction_degrees'] - 180 }}deg);"></div>
                                                     </div>
                                                 @else
-                                                    N/A
+                                                    {{ $hour['wind_direction'] ?? 'N/A' }}
                                                 @endif
                                             </td>
                                             <td style="{{ $pressureColor }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
