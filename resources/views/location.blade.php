@@ -309,7 +309,7 @@
                                                 foreach ($beaufortRanges as $level => $range) {
                                                     if ($windGust <= $range['max']) {
                                                         $gustBeaufortLevel = $level;
-                                                        $gustBeaufortDesc = 'range['desc'];
+                                                        $gustBeaufortDesc = $range['desc'];
                                                         $gustColor = "background: {$range['color']};";
                                                         break;
                                                     }
