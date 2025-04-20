@@ -10,28 +10,17 @@
         .wave-label { text-align: center; font-size: 12px; color: #666; }
         .wave-direction { width: 50px; height: 50px; position: relative; margin: 20px auto; }
         .wave-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #e74c3c; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
-        .wind-direction { width: 30px; height: 30px; position: relative; margin: 0 auto; display: inline-block; vertical-align: middle; }
+        .wind-direction { width: 36px; height: 36px; position: relative; margin: 0 auto; display: inline-block; vertical-align: middle; }
         .wind-arrow {
             width: 0;
             height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 12px solid #2ecc71;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 16px solid #000000; /* Black arrow */
             position: absolute;
             top: 50%;
             left: 50%;
             transform-origin: center bottom;
-            z-index: 2;
-        }
-        .wind-arrow::after {
-            content: '';
-            position: absolute;
-            width: 8px;
-            height: 10px;
-            background: #2ecc71;
-            top: -10px; /* Position the tail just above the triangle base */
-            left: -4px; /* Center the tail */
-            z-index: 1;
         }
         .hourly-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: middle; }
@@ -51,17 +40,11 @@
             .day-header { font-size: 14px; }
             .day-header span { margin-right: 10px; }
             .beaufort-key td, .gradient-key td { font-size: 10px; padding: 3px; }
-            .wind-direction { width: 20px; height: 20px; }
+            .wind-direction { width: 24px; height: 24px; }
             .wind-arrow {
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-bottom: 8px solid #2ecc71;
-            }
-            .wind-arrow::after {
-                width: 6px;
-                height: 6px;
-                top: -6px;
-                left: -3px;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-bottom: 10px solid #000000; /* Black arrow */
             }
         }
     </style>
@@ -330,13 +313,13 @@
 
                                             // Rainfall Color
                                             $rain = $hour['precipitation'] ?? 0;
-                                            $rainColor = 'background: #e6ffe6;';
+                                            $rainColor = 'background: transparent;';
                                             if (is_numeric($rain)) {
-                                                if ($rain == 0) $rainColor = 'background: #e6ffe6;';
-                                                elseif ($rain <= 2) $rainColor = 'background: #99ebff;';
-                                                elseif ($rain <= 5) $rainColor = 'background: #00b7eb;';
-                                                elseif ($rain <= 10) $rainColor = 'background: #0066cc;';
-                                                else $rainColor = 'background: #003d99;';
+                                                if ($rain == 0) $rainColor = 'background: transparent;';
+                                                elseif ($rain <= 2) $rainColor = 'background: #e6f3ff;'; // Light blue
+                                                elseif ($rain <= 5) $rainColor = 'background: #99ccff;'; // Medium blue
+                                                elseif ($rain <= 10) $rainColor = 'background: #3399ff;'; // Darker blue
+                                                else $rainColor = 'background: #0066cc;'; // Intense blue
                                             }
 
                                             // Pressure Color
@@ -433,11 +416,11 @@
                             <h6 class="text-muted fs-14">Rainfall Key (mm)</h6>
                             <table>
                                 <tr>
-                                    <td style="background: #e6ffe6;">0 (Dry)</td>
-                                    <td style="background: #99ebff;">0.1 to 2</td>
-                                    <td style="background: #00b7eb;">2.1 to 5</td>
-                                    <td style="background: #0066cc;">5.1 to 10</td>
-                                    <td style="background: #003d99;">> 10 (Heavy)</td>
+                                    <td style="background: transparent;">0 (Dry)</td>
+                                    <td style="background: #e6f3ff;">0.1 to 2</td>
+                                    <td style="background: #99ccff;">2.1 to 5</td>
+                                    <td style="background: #3399ff;">5.1 to 10</td>
+                                    <td style="background: #0066cc;">> 10 (Heavy)</td>
                                 </tr>
                             </table>
                         </div>
