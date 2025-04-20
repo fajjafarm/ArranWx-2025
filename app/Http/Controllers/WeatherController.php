@@ -16,7 +16,21 @@ class WeatherController extends Controller
         $this->weatherService = $weatherService;
     }
 
-
+    /**
+     * Convert degrees to cardinal direction
+     *
+     * @param float|null $degrees
+     * @return string
+     */
+    protected function degreesToCardinal($degrees)
+    {
+        if ($degrees === null) {
+            return 'N/A';
+        }
+        $directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        $index = round($degrees / 22.5) % 16;
+        return $directions[$index];
+    }
 
     public function warnings(Request $request)
     {
@@ -49,10 +63,8 @@ class WeatherController extends Controller
         return response()->json($data);
     }
 
-
     public function index()
     {
-        
         $brodickArdrossanStatus = [
             'class' => 'status-red',
             'text' => 'No Service',
@@ -88,10 +100,6 @@ class WeatherController extends Controller
             'updated' => Carbon::now('GMT')->format('d M Y H:i')
         ];
 
-       
-    
-
-
         // Dynamic logic example (replace with real data source)
         /*
         $now = now();
@@ -103,27 +111,7 @@ class WeatherController extends Controller
             ];
         }
         */
-    
-            // Example logic for dynamic status (uncomment and adapt if you have a data source)
-            /*
-            $today = now()->format('d M');
-            if ($today === '12 Mar') {
-                $brodickTroonStatus = [
-                    'class' => 'status-amber',
-                    'text' => 'Disrupted (Maintenance)'
-                ];
-            } elseif (someConditionForYellow()) {
-                $brodickTroonStatus = [
-                    'class' => 'status-yellow',
-                    'text' => 'At Risk'
-                ];
-            } else {
-                $brodickTroonStatus = [
-                    'class' => 'status-green',
-                    'text' => 'Normal Service'
-                ];
-            }
-            */
+
         $locations = Location::all();
         $weatherData = [];
 
@@ -156,6 +144,7 @@ class WeatherController extends Controller
 
             $weatherData[$location->name] = [
                 'weather' => $weatherDetails,
+                'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
                 'marine' => $marine,
                 'type' => $location->type,
                 'altitude' => $location->altitude ?? 0,
@@ -195,9 +184,10 @@ class WeatherController extends Controller
                     $date = $time->toDateString();
                     $details = $entry['data']['instant']['details'];
                     $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
-                    if ($next1Hour['summary']['symbol_code'] == 'N/A'){
-                    $next1Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                    if ($next1Hour['summary']['symbol_code'] == 'N/A') {
+                        $next1Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
                     }
+
                     // Calculate Gust
                     $windSpeed = $details['wind_speed'] ?? 0;
                     $cloudCover = $details['cloud_area_fraction'] ?? 0;
@@ -209,18 +199,18 @@ class WeatherController extends Controller
 
                     // Adjust based on cloud cover
                     if ($cloudCover > 75) {
-                        $gustFactor += 0.2; // Up to 1.8 (village) or 2.0 (hill)
+                        $gustFactor += 0.2;
                     } elseif ($cloudCover < 25) {
-                        $gustFactor -= 0.1; // Down to 1.4 (village) or 1.5 (hill)
+                        $gustFactor -= 0.1;
                     }
 
                     // Adjust based on pressure trend
                     if ($previousPressure !== null && $pressure !== null) {
                         $pressureChange = $previousPressure - $pressure;
                         if ($pressureChange > 1) {
-                            $gustFactor += 0.2; // Stormy
+                            $gustFactor += 0.2;
                         } elseif ($pressureChange < -1) {
-                            $gustFactor -= 0.1; // Stabilizing
+                            $gustFactor -= 0.1;
                         }
                     }
                     $previousPressure = $pressure;
@@ -238,6 +228,7 @@ class WeatherController extends Controller
                         'condition' => $next1Hour['summary']['symbol_code'] ?? 'N/A',
                         'wind_speed' => $windSpeed,
                         'wind_gust' => round($windGust, 1),
+                        'wind_direction' => $this->degreesToCardinal($details['wind_from_direction'] ?? null),
                         'pressure' => $pressure,
                     ];
                 }
@@ -256,9 +247,8 @@ class WeatherController extends Controller
                 'sunset' => $sunMoon['sunset'],
                 'moonrise' => $sunMoon['moonrise'],
                 'moonset' => $sunMoon['moonset'],
-                'moonphase' => $entry['moonphase'] ?? null // Moon phase value (e.g., 0-1 or descriptive)
+                'moonphase' => $sunMoon['moonphase'] ?? null
             ];
-            
         }
         Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
 

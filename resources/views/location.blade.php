@@ -1,4 +1,5 @@
 @extends('layouts.vertical', ['title' => $location->name . ' Weather'])
+
 @section('css')
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <!-- Weather Icons CDN -->
@@ -9,6 +10,8 @@
         .wave-label { text-align: center; font-size: 12px; color: #666; }
         .wave-direction { width: 50px; height: 50px; position: relative; margin: 20px auto; }
         .wave-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #e74c3c; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
+        .wind-direction { width: 30px; height: 30px; position: relative; margin: 0 auto; display: inline-block; vertical-align: middle; }
+        .wind-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 18px solid #2ecc71; position: absolute; top: 50%; left: 50%; transform-origin: center bottom; }
         .hourly-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; }
         .hourly-table th { background-color: #f8f9fa; font-weight: bold; }
@@ -27,13 +30,13 @@
             .day-header { font-size: 14px; }
             .day-header span { margin-right: 10px; }
             .beaufort-key td, .gradient-key td { font-size: 10px; padding: 3px; }
+            .wind-direction { width: 20px; height: 20px; }
+            .wind-arrow { border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid #2ecc71; }
         }
     </style>
 @endsection
 
 @section('content')
-    
-
     <div class="row">
         <div class="col">
             <div class="card">
@@ -181,7 +184,7 @@
                                                 case $moonPhase < 0.55:
                                                     $moonIcon = 'wi-moon-full';
                                                     break;
-                                                case $moonPhase < 0.65:
+                                                case $ moonPhase < 0.65:
                                                     $moonIcon = 'wi-moon-waning-gibbous-3';
                                                     break;
                                                 case $moonPhase < 0.75:
@@ -208,6 +211,7 @@
                                         <th>Rain (mm)</th>
                                         <th>Wind (m/s)</th>
                                         <th>Gusts (m/s)</th>
+                                        <th>Wind Dir</th>
                                         <th>Pressure (hPa)</th>
                                     </tr>
                                 </thead>
@@ -322,6 +326,15 @@
                                             <td style="{{ $rainColor }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td style="{{ $windColor }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
                                             <td style="{{ $gustColor }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
+                                            <td>
+                                                @if (isset($hour['wind_from_direction_degrees']))
+                                                    <div class="wind-direction">
+                                                        <div class="wind-arrow" style="transform: translate(-50%, -50%) rotate({{ $hour['wind_from_direction_degrees'] }}deg);"></div>
+                                                    </div>
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
                                             <td style="{{ $pressureColor }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach

@@ -198,7 +198,7 @@
             </div>
         </div>
     </div>
-    <div class="row">
+   <div class="row">
     <div class="col">
         <!-- Village Locations -->
         <div class="section-title">
