@@ -27,8 +27,10 @@
     <div data-simplebar>
 
         <!--- Sidenav Menu -->
+         <!-- Include Location Menus Here -->
+    @include('partials.location-menu')
         <ul class="side-nav">
-            <li class="side-nav-title">Dash</li>
+            <li class="side-nav-title">Village Forecasts</li>
 
             <li class="side-nav-item">
                 <a href="{{ route ('second' ,['dashboards','index']) }}" class="side-nav-link">
