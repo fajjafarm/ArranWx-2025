@@ -21,7 +21,18 @@
             top: 50%;
             left: 50%;
             transform-origin: center bottom;
+            z-index: 2;
         }
+        .wind-arrow::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background: #000000; /* Black tail */
+            top: -10px; /* Start at triangle base */
+            left: -3px; /* Center the tail */
+            z-index: 1;
+        }
+        .wind-dir-text { font-size: 12px; font-weight: bold; }
         .hourly-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .hourly-table th, .hourly-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: middle; }
         .hourly-table th { background-color: #f8f9fa; font-weight: bold; }
@@ -44,8 +55,14 @@
             .wind-arrow {
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-bottom: 10px solid #000000; /* Black arrow */
+                border-bottom: 10px solid #000000;
             }
+            .wind-arrow::after {
+                width: 4px;
+                top: -6px;
+                left: -2px;
+            }
+            .wind-dir-text { font-size: 10px; }
         }
     </style>
 @endsection
@@ -222,10 +239,11 @@
                                         <th>Time</th>
                                         <th>Condition</th>
                                         <th>Temp (°C)</th>
-                                        <th>Rain (mm)</th>
                                         <th>Wind (m/s)</th>
                                         <th>Gusts (m/s)</th>
-                                        <th>Wind Dir</th>
+                                        <th>Arrow</th>
+                                        <th>Dir</th>
+                                        <th>Rain (mm)</th>
                                         <th>Pressure (hPa)</th>
                                     </tr>
                                 </thead>
@@ -332,23 +350,30 @@
                                                 elseif ($pressure <= 1030) $pressureColor = 'background: #99ebff;';
                                                 else $pressureColor = 'background: #66d1f5;';
                                             }
+
+                                            // Tail length based on wind speed (2px per m/s, max 20px)
+                                            $tailLength = is_numeric($windSpeed) ? min($windSpeed * 2, 20) : 0;
+                                            $mobileTailLength = is_numeric($windSpeed) ? min($windSpeed * 1.5, 12) : 0;
                                         ?>
                                         <tr>
                                             <td>{{ $hour['time'] }}</td>
                                             <td><i class="wi {{ $iconClass }} weather-icon" title="{{ $condition }}"></i></td>
                                             <td style="{{ $tempColor }}">{{ $hour['temperature'] ?? 'N/A' }}</td>
-                                            <td style="{{ $rainColor }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td style="{{ $windColor }}" title="{{ $windBeaufortLevel }}: {{ $windBeaufortDesc }}">{{ $hour['wind_speed'] ?? 'N/A' }}</td>
                                             <td style="{{ $gustColor }}" title="{{ $gustBeaufortLevel }}: {{ $gustBeaufortDesc }}">{{ $hour['wind_gust'] ?? 'N/A' }}{{ !isset($hour['wind_gust']) && isset($hour['wind_speed']) ? '*' : '' }}</td>
                                             <td>
                                                 @if (isset($hour['wind_from_direction_degrees']))
                                                     <div class="wind-direction" title="{{ $hour['wind_direction'] }} ({{ $hour['wind_from_direction_degrees'] }}°)">
-                                                        <div class="wind-arrow" style="transform: translate(-50%, -50%) rotate({{ $hour['wind_from_direction_degrees'] - 180 }}deg);"></div>
+                                                        <div class="wind-arrow" style="transform: translate(-50%, -50%) rotate({{ $hour['wind_from_direction_degrees'] - 180 }}deg);">
+                                                            <div class="wind-arrow-tail" style="height: {{ $tailLength }}px; @media (max-width: 768px) { height: {{ $mobileTailLength }}px; }"></div>
+                                                        </div>
                                                     </div>
                                                 @else
-                                                    {{ $hour['wind_direction'] ?? 'N/A' }}
+                                                    N/A
                                                 @endif
                                             </td>
+                                            <td class="wind-dir-text">{{ $hour['wind_direction'] ?? 'N/A' }}</td>
+                                            <td style="{{ $rainColor }}">{{ $hour['precipitation'] ?? 'N/A' }}</td>
                                             <td style="{{ $pressureColor }}">{{ $hour['pressure'] ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
