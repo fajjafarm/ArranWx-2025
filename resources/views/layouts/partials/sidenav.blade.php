@@ -28,8 +28,9 @@
 
         <!--- Sidenav Menu -->
          <!-- Include Location Menus Here -->
+         <ul class="side-nav">
     @include('partials.location-menu')
-        <ul class="side-nav">
+      
             <li class="side-nav-title">Village Forecasts</li>
 
             <li class="side-nav-item">
