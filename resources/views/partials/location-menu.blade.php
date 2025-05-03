@@ -2,7 +2,9 @@
 
 @php
     // Fetch locations and group by type
-    $locations = App\Models\Location::all()->groupBy('type');
+    $locations = App\Models\Location::all()->groupBy('type')->map(function ($group) {
+        return $group->sortBy('name');
+    });
     $types = ['Village', 'Marine', 'Hill'];
 @endphp
 
