@@ -5,7 +5,7 @@
     $locations = App\Models\Location::all()->groupBy('type')->map(function ($group) {
         return $group->sortBy('name');
     });
-    $types = ['Village', 'Marine', 'Hill'];
+    $types = ['Village', 'Hill', 'Marine'];
 @endphp
 
 @foreach ($types as $index => $type)
