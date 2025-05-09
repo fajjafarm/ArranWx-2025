@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WeatherController;
+use App\Http\Controllers\ResourcesController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +24,14 @@ Route::get('/home', fn()=>view('dashboards.index'))->name('home');
 Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])->name('third');
 Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])->name('second');
 Route::get('{any}', [RoutingController::class, 'root'])->name('any');
+
+Route::prefix('resources')->name('resources.')->group(function () {
+    Route::get('/earthquakes', [ResourcesController::class, 'earthquakes'])->name('earthquakes');
+    Route::get('/ship-ais', [ResourcesController::class, 'shipAis'])->name('ship-ais');
+    Route::get('/flight-radar', [ResourcesController::class, 'flightRadar'])->name('flight-radar');
+    Route::get('/lightning', [ResourcesController::class, 'lightning'])->name('lightning');
+    Route::get('/tides', [ResourcesController::class, 'tides'])->name('tides');
+});
 
 // Optional future routes (commented out for now)
 // Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');

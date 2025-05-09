@@ -32,3 +32,42 @@
         </li>
     @endif
 @endforeach
+<li class="side-nav-title">Resources</li>
+<li class="side-nav-item">
+    <a data-bs-toggle="collapse" href="#sidebarResources" aria-expanded="false" aria-controls="sidebarResources" class="side-nav-link">
+        <span class="menu-icon">
+            <i class="ti ti-database"></i>
+        </span>
+        <span class="menu-text">Resources</span>
+        <span class="menu-arrow"></span>
+    </a>
+    <div class="collapse" id="sidebarResources">
+        <ul class="sub-menu">
+            <li class="side-nav-item">
+                <a href="{{ route('resources.earthquakes') }}" class="side-nav-link">
+                    <span class="menu-text">UK Earthquakes</span>
+                </a>
+            </li>
+            <li class="side-nav-item">
+                <a href="{{ route('resources.ship-ais') }}" class="side-nav-link">
+                    <span class="menu-text">Ship AIS Map</span>
+                </a>
+            </li>
+            <li class="side-nav-item">
+                <a href="{{ route('resources.flight-radar') }}" class="side-nav-link">
+                    <span class="menu-text">Planes Near Arran</span>
+                </a>
+            </li>
+            <li class="side-nav-item">
+                <a href="{{ route('resources.lightning') }}" class="side-nav-link">
+                    <span class="menu-text">Lightning Strikes</span>
+                </a>
+            </li>
+            <li class="side-nav-item">
+                <a href="{{ route('resources.tides') }}" class="side-nav-link">
+                    <span class="menu-text">Tide Charts</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
