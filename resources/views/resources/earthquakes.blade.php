@@ -1,12 +1,14 @@
-@extends('layouts.app')
+@extends('layouts.vertical', ['title' => 'UK Earthquakes'])
 
 @section('content')
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'UK Earthquakes in the Last 50 Days'])
+
     <div class="container">
-        <h1>UK Earthquakes in the Last 50 Days</h1>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Date & Time</th>
+                    <th或者
                     <th>Location</th>
                     <th>Magnitude</th>
                 </tr>

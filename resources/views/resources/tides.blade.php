@@ -1,8 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.vertical', ['title' => 'Tide Charts'])
 
 @section('content')
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Tide Charts for Isle of Arran'])
+
     <div class="container">
-        <h1>Tide Charts for Isle of Arran</h1>
         @foreach ($locations as $location)
             <h2>{{ $location }}</h2>
             <p>Date: {{ $tideData[$location]['date'] }}</p>
