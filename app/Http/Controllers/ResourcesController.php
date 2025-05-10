@@ -96,31 +96,49 @@ class ResourcesController extends Controller
 
         return view('resources.tides', compact('tideData', 'locations'));
     }
-    public function webcams()
+public function webcams()
     {
         $webcams = [
             [
                 'title' => 'Brodick Ferry Terminal (CMAL)',
                 'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
                 'source' => 'Caledonian Maritime Assets Ltd',
+                'type' => 'iframe',
             ],
             [
                 'title' => 'Lochranza Ferry Terminal (CMAL)',
                 'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
                 'source' => 'Caledonian Maritime Assets Ltd',
+                'type' => 'iframe',
             ],
             [
                 'title' => 'Brodick Bay towards Goatfell',
                 'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
                 'source' => 'Cottages on Arran',
+                'type' => 'link',
             ],
             [
                 'title' => 'Brodick Ferry Port',
                 'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
                 'source' => 'Cottages on Arran',
+                'type' => 'link',
+            ],
+            [
+                'title' => 'A760 Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
+            ],
+            [
+                'title' => 'B880 String Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
             ],
         ];
 
-        return view('resources.webcams', compact('webcams'));
+        $nacRoadCamsLink = 'https://www.north-ayrshire.gov.uk/roads-and-parking/road-cams';
+
+        return view('resources.webcams', compact('webcams', 'nacRoadCamsLink'));
     }
 }
