@@ -124,4 +124,3 @@ class ResourcesController extends Controller
         return view('resources.webcams', compact('webcams'));
     }
 }
-}
