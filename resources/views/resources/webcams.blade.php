@@ -9,7 +9,7 @@
 
         <div class="row">
             @foreach ($webcams as $webcam)
-                <div class="col-md-4 mb-4">
+                <div class="col-md-6 mb-4">
                     <h3>{{ $webcam['title'] }}</h3>
                     <p>Source: {{ $webcam['source'] }}</p>
                     @if ($webcam['type'] === 'iframe')
