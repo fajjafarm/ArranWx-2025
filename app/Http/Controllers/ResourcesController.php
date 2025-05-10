@@ -112,6 +112,18 @@ public function webcams()
                 'type' => 'iframe',
             ],
             [
+                'title' => 'A760 Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
+            ],
+            [
+                'title' => 'B880 String Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
+            ],
+            [
                 'title' => 'Brodick Bay towards Goatfell',
                 'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
                 'source' => 'Cottages on Arran',
@@ -122,18 +134,6 @@ public function webcams()
                 'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
                 'source' => 'Cottages on Arran',
                 'type' => 'link',
-            ],
-            [
-                'title' => 'B880 String Road (West)',
-                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
-                'source' => 'North Ayrshire Council',
-                'type' => 'image',
-            ],
-            [
-                'title' => 'B880 String Road Cam (East)',
-                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
-                'source' => 'North Ayrshire Council',
-                'type' => 'image',
             ],
         ];
 
