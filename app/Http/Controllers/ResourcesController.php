@@ -124,13 +124,13 @@ public function webcams()
                 'type' => 'link',
             ],
             [
-                'title' => 'A760 Road Cam',
+                'title' => 'B880 String Road (West)',
                 'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
                 'source' => 'North Ayrshire Council',
                 'type' => 'image',
             ],
             [
-                'title' => 'B880 String Road Cam',
+                'title' => 'B880 String Road Cam (East)',
                 'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
                 'source' => 'North Ayrshire Council',
                 'type' => 'image',
