@@ -96,4 +96,32 @@ class ResourcesController extends Controller
 
         return view('resources.tides', compact('tideData', 'locations'));
     }
+    public function webcams()
+    {
+        $webcams = [
+            [
+                'title' => 'Brodick Ferry Terminal (CMAL)',
+                'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
+                'source' => 'Caledonian Maritime Assets Ltd',
+            ],
+            [
+                'title' => 'Lochranza Ferry Terminal (CMAL)',
+                'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
+                'source' => 'Caledonian Maritime Assets Ltd',
+            ],
+            [
+                'title' => 'Brodick Bay towards Goatfell',
+                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                'source' => 'Cottages on Arran',
+            ],
+            [
+                'title' => 'Brodick Ferry Port',
+                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                'source' => 'Cottages on Arran',
+            ],
+        ];
+
+        return view('resources.webcams', compact('webcams'));
+    }
+}
 }

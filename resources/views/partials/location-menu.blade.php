@@ -68,6 +68,11 @@
                     <span class="menu-text">Tide Charts</span>
                 </a>
             </li>
+                        <li class="side-nav-item">
+                <a href="{{ route('resources.webcams') }}" class="side-nav-link">
+                    <span class="menu-text">Arran Webcams</span>
+                </a>
+            </li>
         </ul>
     </div>
 </li>
