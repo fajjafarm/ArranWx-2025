@@ -58,7 +58,7 @@ class ResourcesController extends Controller
             'height' => '600',
             'latitude' => 55.6,
             'longitude' => -5.3,
-            'zoom' => 8,
+            'zoom' => 9,
             'names' => true,
         ];
         $vesselLinks = [
