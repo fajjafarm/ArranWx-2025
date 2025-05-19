@@ -51,12 +51,38 @@ class ResourcesController extends Controller
         return view('resources.earthquakes', compact('earthquakeData'));
     }
 
-    public function shipAis()
+        public function shipAis()
     {
-        // MarineTraffic embed URL (free map centered on Arran)
-        $mapUrl = 'https://www.marinetraffic.com/en/ais/home/centerx:-5.3/centery:55.6/zoom:10';
-        return view('resources.ship-ais', compact('mapUrl'));
+        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10';
+        $vesselLinks = [
+            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona'],
+            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox'],
+            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred'],
+        ];
+        return view('resources.ship-ais', compact('mapUrl', 'vesselLinks'));
     }
+
+    public function shipCatriona()
+    {
+        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=235098028';
+        $vesselName = 'MV Catriona';
+        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+    }
+
+    public function shipGlenSannox()
+    {
+        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=232048757';
+        $vesselName = 'MV Glen Sannox';
+        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+    }
+
+    public function shipAlfred()
+    {
+        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=232043477';
+        $vesselName = 'MV Alfred';
+        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+    }
+}
 
     public function flightRadar()
     {
