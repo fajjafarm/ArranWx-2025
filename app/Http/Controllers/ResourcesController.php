@@ -51,37 +51,69 @@ class ResourcesController extends Controller
         return view('resources.earthquakes', compact('earthquakeData'));
     }
 
-        public function shipAis()
+            public function shipAis()
     {
-        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10';
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'names' => true,
+        ];
         $vesselLinks = [
             ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona'],
             ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox'],
             ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred'],
         ];
-        return view('resources.ship-ais', compact('mapUrl', 'vesselLinks'));
+        return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
     }
 
     public function shipCatriona()
     {
-        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=235098028';
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '235098028',
+            'names' => true,
+        ];
         $vesselName = 'MV Catriona';
-        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
     }
 
     public function shipGlenSannox()
     {
-        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=232048757';
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '232048757',
+            'names' => true,
+        ];
         $vesselName = 'MV Glen Sannox';
-        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
     }
 
     public function shipAlfred()
     {
-        $mapUrl = 'https://www.vesselfinder.com/aismap?lat=55.6&lng=-5.3&zoom=10&mmsi=232043477';
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '232043477',
+            'names' => true,
+        ];
         $vesselName = 'MV Alfred';
-        return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
     }
+
 
 
     public function flightRadar()

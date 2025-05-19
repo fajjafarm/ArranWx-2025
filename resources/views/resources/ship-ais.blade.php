@@ -5,7 +5,18 @@
 
     <div class="container">
         <p>View real-time ship movements around the Isle of Arran using VesselFinder's AIS map. Track specific vessels below.</p>
-        <iframe src="{{ $mapUrl }}" width="100%" height="600px" frameborder="0" loading="lazy"></iframe>
+        <div id="vesselfinder-map">
+            <script type="text/javascript">
+                // Map appearance
+                var width = "{{ $mapParams['width'] }}";
+                var height = "{{ $mapParams['height'] }}";
+                var latitude = {{ $mapParams['latitude'] }};
+                var longitude = {{ $mapParams['longitude'] }};
+                var zoom = {{ $mapParams['zoom'] }};
+                var names = {{ $mapParams['names'] ? 'true' : 'false' }};
+            </script>
+            <script type="text/javascript" src="https://www.vesselfinder.com/aismap.js"></script>
+        </div>
         <h3 class="mt-4">Track Specific Vessels</h3>
         <ul class="list-group">
             @foreach ($vesselLinks as $vessel)
