@@ -82,7 +82,7 @@ class ResourcesController extends Controller
         $vesselName = 'MV Alfred';
         return view('resources.ship-vessel', compact('mapUrl', 'vesselName'));
     }
-}
+
 
     public function flightRadar()
     {
