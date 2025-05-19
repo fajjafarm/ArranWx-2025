@@ -77,7 +77,7 @@ class ResourcesController extends Controller
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '235098028',
+            'mmsi' => '235116772',
             'names' => true,
         ];
         $vesselName = 'MV Catriona';
@@ -91,8 +91,8 @@ class ResourcesController extends Controller
             'height' => '600',
             'latitude' => 55.6,
             'longitude' => -5.3,
-            'zoom' => 11,
-            'mmsi' => '232048757',
+            'zoom' => 10,
+            'mmsi' => '232049068',
             'names' => true,
         ];
         $vesselName = 'MV Glen Sannox';
@@ -106,8 +106,8 @@ class ResourcesController extends Controller
             'height' => '600',
             'latitude' => 55.6,
             'longitude' => -5.3,
-            'zoom' => 11,
-            'mmsi' => '232043477',
+            'zoom' => 10,
+            'mmsi' => '232019501',
             'names' => true,
         ];
         $vesselName = 'MV Alfred';
