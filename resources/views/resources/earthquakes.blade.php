@@ -30,6 +30,6 @@
                 </tbody>
             </table>
         @endif
-        <p class="text-muted mt-3">{{ $copyright }}</p>
+        <p class="text-muted mt-3">{{ $copyright  }}</p>
     </div>
 @endsection
