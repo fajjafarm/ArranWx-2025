@@ -49,9 +49,34 @@
                 </a>
             </li>
             <li class="side-nav-item">
-                <a href="{{ route('resources.ship-ais') }}" class="side-nav-link">
+                <a data-bs-toggle="collapse" href="#sidebarShipAIS" aria-expanded="false" aria-controls="sidebarShipAIS" class="side-nav-link">
                     <span class="menu-text">Ship AIS Map</span>
+                    <span class="menu-arrow"></span>
                 </a>
+                <div class="collapse" id="sidebarShipAIS">
+                    <ul class="sub-menu">
+                        <li class="side-nav-item">
+                            <a href="{{ route('resources.ship-ais') }}" class="side-nav-link">
+                                <span class="menu-text">All Ships Near Arran</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('resources.ship-catriona') }}" class="side-nav-link">
+                                <span class="menu-text">MV Catriona</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('resources.ship-glen-sannox') }}" class="side-nav-link">
+                                <span class="menu-text">MV Glen Sannox</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('resources.ship-alfred') }}" class="side-nav-link">
+                                <span class="menu-text">MV Alfred</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             <li class="side-nav-item">
                 <a href="{{ route('resources.flight-radar') }}" class="side-nav-link">
@@ -68,7 +93,7 @@
                     <span class="menu-text">Tide Charts</span>
                 </a>
             </li>
-                        <li class="side-nav-item">
+            <li class="side-nav-item">
                 <a href="{{ route('resources.webcams') }}" class="side-nav-link">
                     <span class="menu-text">Arran Webcams</span>
                 </a>

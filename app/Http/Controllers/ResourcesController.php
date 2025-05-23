@@ -5,58 +5,135 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use SimpleXMLElement;
 
 
 class ResourcesController extends Controller
 {
-    public function earthquakes()
+       public function earthquakes()
     {
-        // Fetch UK earthquakes from USGS (last 50 days)
-        $endTime = Carbon::now()->toDateTimeString();
-        $startTime = Carbon::now()->subDays(50)->toDateTimeString();
-        $response = Http::get('https://earthquake.usgs.gov/fdsnws/event/1/query', [
-            'format' => 'geojson',
-            'starttime' => $startTime,
-            'endtime' => $endTime,
-            'minlatitude' => 49,
-            'maxlatitude' => 61,
-            'minlongitude' => -11,
-            'maxlongitude' => 2,
-        ]);
+        try {
+            $earthquakes = Cache::remember('bgs_earthquakes', now()->addHours(1), function () {
+                $response = Http::get('http://earthquakes.bgs.ac.uk/feeds/UK_Recent.xml');
 
-        $earthquakes = Cache::remember('earthquakes', now()->addHours(1), function () use ($startTime, $endTime) {
-    return Http::get('https://earthquake.usgs.gov/fdsnws/event/1/query', [
-        'format' => 'geojson',
-        'starttime' => $startTime,
-        'endtime' => $endTime,
-        'minlatitude' => 49,
-        'maxlatitude' => 61,
-        'minlongitude' => -11,
-        'maxlongitude' => 2,
-    ])->json()['features'];
-});
+                if (!$response->successful()) {
+                    \Log::error('BGS GeoRSS request failed', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+                    return [];
+                }
 
-        // Process earthquakes to extract relevant data
-        $earthquakeData = array_map(function ($quake) {
-            $place = $quake['properties']['place'] ?? 'Unknown';
-            $highlight = stripos($place, 'Arran') !== false || stripos($place, 'Clyde') !== false;
-            return [
-                'time' => Carbon::createFromTimestampMs($quake['properties']['time'])->toDateTimeString(),
-                'place' => $place,
-                'magnitude' => $quake['properties']['mag'] ?? 'N/A',
-                'highlight' => $highlight,
-            ];
-        }, $earthquakes);
+                $xml = new SimpleXMLElement($response->body());
+                $items = [];
 
-        return view('resources.earthquakes', compact('earthquakeData'));
+                foreach ($xml->channel->item as $item) {
+                    $description = (string) $item->description;
+                    preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: (.+?),(.+?) ; Depth: (\d+) km ; Magnitude: (.+)/', $description, $matches);
+
+                    if ($matches) {
+                        $items[] = [
+                            'time' => Carbon::parse($matches[1])->toDateTimeString(),
+                            'place' => $matches[2],
+                            'latitude' => (float) $matches[3],
+                            'longitude' => (float) $matches[4],
+                            'depth' => (int) $matches[5],
+                            'magnitude' => (float) $matches[6],
+                            'link' => (string) $item->link,
+                        ];
+                    }
+                }
+
+                return $items;
+            });
+
+            $earthquakeData = array_map(function ($quake) {
+                $highlight = stripos($quake['place'], 'Arran') !== false || stripos($quake['place'], 'Clyde') !== false;
+                return [
+                    'time' => $quake['time'],
+                    'place' => $quake['place'],
+                    'magnitude' => $quake['magnitude'],
+                    'highlight' => $highlight,
+                    'link' => $quake['link'],
+                ];
+            }, $earthquakes);
+
+            $message = empty($earthquakes) ? 'No earthquakes recorded in the UK in the last 50 days.' : null;
+            $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
+
+            return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
+        } catch (\Exception $e) {
+            \Log::error('BGS earthquake data processing failed', ['error' => $e->getMessage()]);
+            $message = 'Unable to fetch earthquake data. Please try again later.';
+            $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
+            return view('resources.earthquakes', ['earthquakeData' => [], 'message' => $message, 'copyright' => $copyright]);
+        }
     }
 
-    public function shipAis()
+            public function shipAis()
     {
-        // MarineTraffic embed URL (free map centered on Arran)
-        $mapUrl = 'https://www.marinetraffic.com/en/ais/home/centerx:-5.3/centery:55.6/zoom:10';
-        return view('resources.ship-ais', compact('mapUrl'));
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 10,
+            'names' => true,
+        ];
+        $vesselLinks = [
+            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona'],
+            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox'],
+            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred'],
+        ];
+        return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
     }
+
+    public function shipCatriona()
+    {
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '235116772',
+            'names' => true,
+        ];
+        $vesselName = 'MV Catriona';
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+    }
+
+    public function shipGlenSannox()
+    {
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '232049068',
+            'names' => true,
+        ];
+        $vesselName = 'MV Glen Sannox';
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+    }
+
+    public function shipAlfred()
+    {
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.6,
+            'longitude' => -5.3,
+            'zoom' => 11,
+            'mmsi' => '232019501',
+            'names' => true,
+        ];
+        $vesselName = 'MV Alfred';
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+    }
+
+
 
     public function flightRadar()
     {
