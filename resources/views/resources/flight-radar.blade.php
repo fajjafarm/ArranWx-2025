@@ -4,6 +4,6 @@
     @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Planes Near Arran'])
 
     <div class="container">
-        <iframe src="{{ $mapUrl }}" width="100%" height="600px" frameborder="0"></iframe>
+        <iframe frameborder="0" scrolling="no" marginheight="0" marginwidth="0" width=1200 height=1000 src="https://www.airnavradar.com/?widget=1&z=8&lat=55.59770&lng=-5.43830&showLabels=true&showAirlineLogo=true&showAircraftModel=true&showFn=true&showRoute=true&class=A,B,G,C,M,H,?"></iframe>
     </div>
 @endsection
