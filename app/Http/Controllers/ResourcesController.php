@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Earthquake;
 use Carbon\Carbon;
 use SimpleXMLElement;
 
@@ -13,44 +14,44 @@ class ResourcesController extends Controller
             public function earthquakes()
     {
         try {
-            $endTime = Carbon::now()->toDateTimeString();
-            $startTime = Carbon::now()->subDays(60)->toDateTimeString();
+            $endTime = Carbon::now();
+            $startTime = $endTime->copy()->subDays(60);
 
-            $earthquakes = Cache::remember('bgs_earthquakes', now()->addHours(1), function () use ($startTime) {
-                $response = Http::timeout(10)->get('https://quakes.bgs.ac.uk/feeds/MhSeismology.xml');
+            // Cache database query results for 4 hours
+            $earthquakeData = Cache::remember('bgs_earthquakes', now()->addHours(4), function () use ($startTime, $endTime) {
+                // Fetch and update database
+                try {
+                    $response = Http::retry(3, 1000)->timeout(10)->get('https://quakes.bgs.ac.uk/feeds/MhSeismology.xml');
 
-                if (!$response->successful()) {
-                    \Log::error('BGS MhSeismology GeoRSS request failed', [
-                        'status' => $response->status(),
-                        'body' => substr($response->body(), 0, 500),
-                    ]);
-                    Cache::forget('bgs_earthquakes');
-                    return [];
-                }
+                    if (!$response->successful()) {
+                        \Log::error('BGS MhSeismology GeoRSS request failed', [
+                            'status' => $response->status(),
+                            'body' => substr($response->body(), 0, 500),
+                        ]);
+                        return $this->fetchFromDatabase($startTime, $endTime);
+                    }
 
-                $body = $response->body();
-                if (empty($body) || strpos($body, '<rss') === false) {
-                    \Log::error('BGS MhSeismology feed is empty or invalid', ['body' => substr($body, 0, 500)]);
-                    return [];
-                }
+                    $body = $response->body();
+                    if (empty($body) || strpos($body, '<rss') === false) {
+                        \Log::error('BGS MhSeismology feed is empty or invalid', ['body' => substr($body, 0, 500)]);
+                        return $this->fetchFromDatabase($startTime, $endTime);
+                    }
 
-                $xml = new SimpleXMLElement($body);
-                if (!isset($xml->channel->item)) {
-                    \Log::warning('BGS MhSeismology feed has no items', ['xml' => (string) $xml->asXML()]);
-                    return [];
-                }
+                    $xml = new SimpleXMLElement($body);
+                    if (!isset($xml->channel->item)) {
+                        \Log::warning('BGS MhSeismology feed has no items', ['xml' => (string) $xml->asXML()]);
+                        return $this->fetchFromDatabase($startTime, $endTime);
+                    }
 
-                $items = [];
-                foreach ($xml->channel->item as $item) {
-                    $description = (string) $item->description;
-                    // Robust regex for description parsing
-                    preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude: ([-\d.]+)/', $description, $matches);
+                    $items = [];
+                    foreach ($xml->channel->item as $item) {
+                        $description = (string) $item->description;
+                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude: ([-\d.]+)/', $description, $matches);
 
-                    if ($matches) {
-                        $quakeTime = Carbon::parse($matches[1]);
-                        if ($quakeTime->gte(Carbon::parse($startTime))) {
-                            $items[] = [
-                                'time' => $quakeTime->toDateTimeString(),
+                        if ($matches) {
+                            $quakeTime = Carbon::parse($matches[1]);
+                            $quakeData = [
+                                'time' => $quakeTime,
                                 'place' => trim($matches[2]),
                                 'latitude' => (float) $matches[3],
                                 'longitude' => (float) $matches[4],
@@ -58,16 +59,22 @@ class ResourcesController extends Controller
                                 'magnitude' => (float) $matches[6],
                                 'link' => (string) $item->link,
                             ];
-                        }
-                    } else {
-                        \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
-                        // Fallback parsing using title
-                        $title = (string) $item->title;
-                        if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
-                            $quakeTime = Carbon::parse($item->pubDate);
-                            if ($quakeTime->gte(Carbon::parse($startTime))) {
-                                $items[] = [
-                                    'time' => $quakeTime->toDateTimeString(),
+
+                            Earthquake::updateOrCreate(
+                                ['time' => $quakeTime, 'place' => $quakeData['place']],
+                                $quakeData
+                            );
+
+                            if ($quakeTime->gte($startTime)) {
+                                $items[] = $quakeData;
+                            }
+                        } else {
+                            \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
+                            $title = (string) $item->title;
+                            if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
+                                $quakeTime = Carbon::parse($item->pubDate);
+                                $quakeData = [
+                                    'time' => $quakeTime,
                                     'place' => trim($titleMatches[2]),
                                     'latitude' => (float) $item->{'geo:lat'},
                                     'longitude' => (float) $item->{'geo:long'},
@@ -75,40 +82,65 @@ class ResourcesController extends Controller
                                     'magnitude' => (float) $titleMatches[1],
                                     'link' => (string) $item->link,
                                 ];
+
+                                Earthquake::updateOrCreate(
+                                    ['time' => $quakeTime, 'place' => $quakeData['place']],
+                                    $quakeData
+                                );
+
+                                if ($quakeTime->gte($startTime)) {
+                                    $items[] = $quakeData;
+                                }
                             }
                         }
                     }
+
+                    \Log::info('BGS earthquake count fetched', ['count' => count($items)]);
+                } catch (\Exception $e) {
+                    \Log::error('BGS feed processing failed', ['error' => $e->getMessage()]);
+                    return $this->fetchFromDatabase($startTime, $endTime);
                 }
 
-                \Log::info('BGS earthquake count', ['count' => count($items)]);
-                return $items;
+                // Query database for all quakes in the time range
+                return $this->fetchFromDatabase($startTime, $endTime);
             });
 
-            $earthquakeData = array_map(function ($quake) {
-                $highlight = stripos($quake['place'], 'Arran') !== false || stripos($quake['place'], 'Clyde') !== false;
-                return [
-                    'time' => $quake['time'],
-                    'place' => $quake['place'],
-                    'magnitude' => $quake['magnitude'],
-                    'highlight' => $highlight,
-                    'link' => $quake['link'],
-                ];
-            }, $earthquakes);
-
-            $message = empty($earthquakes) ? 'No earthquakes recorded in the UK in the last 60 days.' : null;
+            $message = empty($earthquakeData) ? 'No earthquakes recorded in the UK in the last 60 days.' : null;
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
+
+            \Log::info('Earthquake data rendered', ['count' => count($earthquakeData)]);
 
             return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
         } catch (\Exception $e) {
-            \Log::error('BGS MhSeismology data processing failed', [
+            \Log::error('Earthquake processing failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
             Cache::forget('bgs_earthquakes');
-            $message = 'Unable to fetch earthquake data. Please try again later.';
+            $message = 'Unable to fetch or process earthquake data. Displaying cached data if available.';
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
-            return view('resources.earthquakes', ['earthquakeData' => [], 'message' => $message, 'copyright' => $copyright]);
+
+            $earthquakeData = $this->fetchFromDatabase($startTime, $endTime);
+
+            return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
         }
+    }
+
+    protected function fetchFromDatabase($startTime, $endTime)
+    {
+        return Earthquake::whereBetween('time', [$startTime, $endTime])
+            ->orderBy('time', 'desc')
+            ->get()
+            ->map(function ($quake) {
+                $highlight = stripos($quake->place, 'Arran') !== false || stripos($quake->place, 'Clyde') !== false;
+                return [
+                    'time' => $quake->time->toDateTimeString(),
+                    'place' => $quake->place,
+                    'magnitude' => $quake->magnitude,
+                    'highlight' => $highlight,
+                    'link' => $quake->link,
+                ];
+            })->toArray();
     }
 
             public function shipAis()
