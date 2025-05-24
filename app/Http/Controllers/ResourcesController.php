@@ -46,7 +46,8 @@ class ResourcesController extends Controller
                     $items = [];
                     foreach ($xml->channel->item as $item) {
                         $description = (string) $item->description;
-                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude: ([-\d.]+)/', $description, $matches);
+                        // Updated regex to handle whitespace
+                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude:\s*([-\d.]+)/', $description, $matches);
 
                         if ($matches) {
                             $quakeTime = Carbon::parse($matches[1]);

@@ -8,7 +8,8 @@
             <div class="alert alert-info" role="alert">
                 {{ $message }}
             </div>
-        @else
+        @endif
+        @if (!empty($earthquakeData))
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -29,6 +30,9 @@
                     @endforeach
                 </tbody>
             </table>
+        @else
+            <!-- Debug output for empty data -->
+            <p class="text-muted">No earthquake data available in the database for the last 60 days.</p>
         @endif
         <p class="text-muted mt-3">{{ $copyright }}</p>
     </div>
