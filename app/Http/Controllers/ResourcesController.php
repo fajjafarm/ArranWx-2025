@@ -17,6 +17,9 @@ class ResourcesController extends Controller
             $endTime = Carbon::now();
             $startTime = $endTime->copy()->subDays(60);
 
+            // Clean up quakes older than 90 days
+            Earthquake::where('time', '<', now()->subDays(90))->delete();
+
             // Cache database query results for 4 hours
             $earthquakeData = Cache::remember('bgs_earthquakes', now()->addHours(4), function () use ($startTime, $endTime) {
                 // Fetch and update database
@@ -105,6 +108,9 @@ class ResourcesController extends Controller
                 return $this->fetchFromDatabase($startTime, $endTime);
             });
 
+            // Sort by distance
+            usort($earthquakeData, fn($a, $b) => $a['distance'] <=> $b['distance']);
+
             $message = empty($earthquakeData) ? 'No earthquakes recorded near Arran in the last 60 days.' : null;
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
 
@@ -121,6 +127,9 @@ class ResourcesController extends Controller
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
 
             $earthquakeData = $this->fetchFromDatabase($startTime, $endTime);
+
+            // Sort by distance
+            usort($earthquakeData, fn($a, $b) => $a['distance'] <=> $b['distance']);
 
             return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
         }
@@ -145,6 +154,8 @@ class ResourcesController extends Controller
                     'distance' => round($distance), // Round to nearest mile
                     'highlight' => $highlight,
                     'link' => $quake->link,
+                    'latitude' => $quake->latitude, // For Leaflet
+                    'longitude' => $quake->longitude, // For Leaflet
                 ];
             })->toArray();
     }

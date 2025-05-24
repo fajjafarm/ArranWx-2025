@@ -10,6 +10,31 @@
             </div>
         @endif
         @if (!empty($earthquakeData))
+            <!-- Leaflet Map -->
+            <div id="quake-map" style="height: 400px; margin-bottom: 20px;"></div>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script>
+                var map = L.map('quake-map').setView([55.6, -5.3], 7); // Center on Arran
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Plot quakes
+                var quakes = @json($earthquakeData);
+                quakes.forEach(function(quake) {
+                    if (quake.latitude && quake.longitude) {
+                        var marker = L.marker([quake.latitude, quake.longitude]).addTo(map);
+                        marker.bindPopup(
+                            '<b>' + quake.place + '</b><br>' +
+                            'Magnitude: ' + quake.magnitude.toFixed(1) + '<br>' +
+                            'Distance: ' + (quake.distance || 'N/A') + ' miles<br>' +
+                            '<a href="' + quake.link + '" target="_blank">View on BGS</a>'
+                        );
+                    }
+                });
+            </script>
+
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -26,7 +51,7 @@
                             <td>{{ $quake['time'] }}</td>
                             <td>{{ $quake['place'] }}</td>
                             <td>{{ number_format($quake['magnitude'], 1) }}</td>
-                            <td>{{ $quake['distance'] }}</td>
+                            <td>{{ isset($quake['distance']) ? $quake['distance'] : 'N/A' }}</td>
                             <td><a href="{{ $quake['link'] }}" target="_blank">View on BGS</a></td>
                         </tr>
                     @endforeach
