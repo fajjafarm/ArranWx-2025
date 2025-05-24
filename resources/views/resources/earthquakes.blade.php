@@ -17,7 +17,7 @@
             <script>
                 var map = L.map('quake-map').setView([55.6, -5.3], 7); // Center on Arran
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
 
                 // Plot quakes
@@ -25,6 +25,12 @@
                 quakes.forEach(function(quake) {
                     if (quake.latitude && quake.longitude) {
                         var marker = L.marker([quake.latitude, quake.longitude]).addTo(map);
+                        // Tooltip on hover
+                        marker.bindTooltip(
+                            quake.time + '<br>Magnitude: ' + quake.magnitude.toFixed(1),
+                            { direction: 'top', className: 'leaflet-tooltip' }
+                        );
+                        // Popup on click
                         marker.bindPopup(
                             '<b>' + quake.place + '</b><br>' +
                             'Magnitude: ' + quake.magnitude.toFixed(1) + '<br>' +
@@ -62,4 +68,14 @@
         @endif
         <p class="text-muted mt-3">{{ $copyright }}</p>
     </div>
+
+    <style>
+        .leaflet-tooltip {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+        }
+    </style>
 @endsection

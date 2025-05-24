@@ -141,12 +141,12 @@ class ResourcesController extends Controller
             ->orderBy('time', 'desc')
             ->get()
             ->map(function ($quake) {
-                $highlight = stripos($quake->place, 'Arran') !== false || stripos($quake->place, 'Clyde') !== false;
+                // Highlight for Arran, Clyde, or distance < 20 miles
+                $highlight = stripos($quake->place, 'Arran') !== false ||
+                             stripos($quake->place, 'Clyde') !== false ||
+                             $this->calculateDistance(55.6, -5.3, $quake->latitude, $quake->longitude) < 20;
                 // Calculate distance from Arran (55.6°N, -5.3°E)
-                $distance = $this->calculateDistance(
-                    55.6, -5.3, // Arran
-                    $quake->latitude, $quake->longitude
-                );
+                $distance = $this->calculateDistance(55.6, -5.3, $quake->latitude, $quake->longitude);
                 return [
                     'time' => $quake->time->toDateTimeString(),
                     'place' => $quake->place,
@@ -177,7 +177,6 @@ class ResourcesController extends Controller
 
         return $earthRadius * $c;
     }
-
 
             public function shipAis()
     {
