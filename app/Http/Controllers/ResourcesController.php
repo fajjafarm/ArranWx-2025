@@ -47,7 +47,7 @@ class ResourcesController extends Controller
                     foreach ($xml->channel->item as $item) {
                         $description = (string) $item->description;
                         // Updated regex to handle whitespace
-                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude:\s*([-\d.]+)/', $description, $matches);
+                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?)(?: ; Lat\/long: ([-\d.]+),([-\d.]+))?(?: ; Depth: (\d+) km)? ; Magnitude:\s*([-\d.]+)/', $description, $matches);
 
                         if ($matches) {
                             $quakeTime = Carbon::parse($matches[1]);
@@ -72,7 +72,7 @@ class ResourcesController extends Controller
                         } else {
                             \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
                             $title = (string) $item->title;
-                            if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
+                            if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) { 
                                 $quakeTime = Carbon::parse($item->pubDate);
                                 $quakeData = [
                                     'time' => $quakeTime,
