@@ -11,7 +11,20 @@ use SimpleXMLElement;
 
 class ResourcesController extends Controller
 {
-            public function earthquakes()
+            <?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Earthquake;
+use Carbon\Carbon;
+use SimpleXMLElement;
+
+class ResourcesController extends Controller
+{
+    public function earthquakes()
     {
         try {
             $endTime = Carbon::now();
@@ -46,8 +59,7 @@ class ResourcesController extends Controller
                     $items = [];
                     foreach ($xml->channel->item as $item) {
                         $description = (string) $item->description;
-                        // Updated regex to handle whitespace
-                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?)(?: ; Lat\/long: ([-\d.]+),([-\d.]+))?(?: ; Depth: (\d+) km)? ; Magnitude:\s*([-\d.]+)/', $description, $matches);
+                        preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude:\s*([-\d.]+)/', $description, $matches);
 
                         if ($matches) {
                             $quakeTime = Carbon::parse($matches[1]);
@@ -72,7 +84,7 @@ class ResourcesController extends Controller
                         } else {
                             \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
                             $title = (string) $item->title;
-                            if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) { 
+                            if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
                                 $quakeTime = Carbon::parse($item->pubDate);
                                 $quakeData = [
                                     'time' => $quakeTime,
@@ -106,7 +118,7 @@ class ResourcesController extends Controller
                 return $this->fetchFromDatabase($startTime, $endTime);
             });
 
-            $message = empty($earthquakeData) ? 'No earthquakes recorded in the UK in the last 60 days.' : null;
+            $message = empty($earthquakeData) ? 'No earthquakes recorded near Arran in the last 60 days.' : null;
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
 
             \Log::info('Earthquake data rendered', ['count' => count($earthquakeData)]);
@@ -134,15 +146,40 @@ class ResourcesController extends Controller
             ->get()
             ->map(function ($quake) {
                 $highlight = stripos($quake->place, 'Arran') !== false || stripos($quake->place, 'Clyde') !== false;
+                // Calculate distance from Arran (55.6°N, -5.3°E)
+                $distance = $this->calculateDistance(
+                    55.6, -5.3, // Arran
+                    $quake->latitude, $quake->longitude
+                );
                 return [
                     'time' => $quake->time->toDateTimeString(),
                     'place' => $quake->place,
                     'magnitude' => $quake->magnitude,
+                    'distance' => round($distance), // Round to nearest mile
                     'highlight' => $highlight,
                     'link' => $quake->link,
                 ];
             })->toArray();
     }
+
+    protected function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 3958.8; // Miles
+        $lat1 = deg2rad($lat1);
+        $lon1 = deg2rad($lon1);
+        $lat2 = deg2rad($lat2);
+        $lon2 = deg2rad($lon2);
+
+        $dLat = $lat2 - $lat1;
+        $dLon = $lon2 - $lon1;
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos($lat1) * cos($lat2) * sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
 
             public function shipAis()
     {

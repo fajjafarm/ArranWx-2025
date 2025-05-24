@@ -1,7 +1,7 @@
-@extends('layouts.vertical', ['title' => 'UK Earthquakes'])
+@extends('layouts.vertical', ['title' => 'Earthquakes near Arran'])
 
 @section('content')
-    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'UK Earthquakes in the Last 60 Days'])
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Earthquakes near Arran'])
 
     <div class="container">
         @if ($message)
@@ -16,6 +16,7 @@
                         <th>Date & Time</th>
                         <th>Location</th>
                         <th>Magnitude</th>
+                        <th>Distance (miles)</th>
                         <th>Details</th>
                     </tr>
                 </thead>
@@ -25,13 +26,13 @@
                             <td>{{ $quake['time'] }}</td>
                             <td>{{ $quake['place'] }}</td>
                             <td>{{ number_format($quake['magnitude'], 1) }}</td>
+                            <td>{{ $quake['distance'] }}</td>
                             <td><a href="{{ $quake['link'] }}" target="_blank">View on BGS</a></td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         @else
-            <!-- Debug output for empty data -->
             <p class="text-muted">No earthquake data available in the database for the last 60 days.</p>
         @endif
         <p class="text-muted mt-3">{{ $copyright }}</p>
