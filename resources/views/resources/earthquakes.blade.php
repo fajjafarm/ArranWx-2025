@@ -1,7 +1,7 @@
 @extends('layouts.vertical', ['title' => 'UK Earthquakes'])
 
 @section('content')
-    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'UK Earthquakes in the Last 50 Days'])
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'UK Earthquakes in the Last 60 Days'])
 
     <div class="container">
         @if ($message)
@@ -23,13 +23,13 @@
                         <tr class="{{ $quake['highlight'] ? 'table-warning' : '' }}">
                             <td>{{ $quake['time'] }}</td>
                             <td>{{ $quake['place'] }}</td>
-                            <td>{{ $quake['magnitude'] }}</td>
+                            <td>{{ number_format($quake['magnitude'], 1) }}</td>
                             <td><a href="{{ $quake['link'] }}" target="_blank">View on BGS</a></td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         @endif
-        <p class="text-muted mt-3">{{ $copyright  }}</p>
+        <p class="text-muted mt-3">{{ $copyright }}</p>
     </div>
 @endsection

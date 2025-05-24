@@ -10,40 +10,77 @@ use SimpleXMLElement;
 
 class ResourcesController extends Controller
 {
-       public function earthquakes()
+            public function earthquakes()
     {
         try {
-            $earthquakes = Cache::remember('bgs_earthquakes', now()->addHours(1), function () {
-                $response = Http::get('http://earthquakes.bgs.ac.uk/feeds/UK_Recent.xml');
+            $endTime = Carbon::now()->toDateTimeString();
+            $startTime = Carbon::now()->subDays(60)->toDateTimeString();
+
+            $earthquakes = Cache::remember('bgs_earthquakes', now()->addHours(1), function () use ($startTime) {
+                $response = Http::timeout(10)->get('https://quakes.bgs.ac.uk/feeds/MhSeismology.xml');
 
                 if (!$response->successful()) {
-                    \Log::error('BGS GeoRSS request failed', [
+                    \Log::error('BGS MhSeismology GeoRSS request failed', [
                         'status' => $response->status(),
-                        'body' => $response->body(),
+                        'body' => substr($response->body(), 0, 500),
                     ]);
+                    Cache::forget('bgs_earthquakes');
                     return [];
                 }
 
-                $xml = new SimpleXMLElement($response->body());
-                $items = [];
+                $body = $response->body();
+                if (empty($body) || strpos($body, '<rss') === false) {
+                    \Log::error('BGS MhSeismology feed is empty or invalid', ['body' => substr($body, 0, 500)]);
+                    return [];
+                }
 
+                $xml = new SimpleXMLElement($body);
+                if (!isset($xml->channel->item)) {
+                    \Log::warning('BGS MhSeismology feed has no items', ['xml' => (string) $xml->asXML()]);
+                    return [];
+                }
+
+                $items = [];
                 foreach ($xml->channel->item as $item) {
                     $description = (string) $item->description;
-                    preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: (.+?),(.+?) ; Depth: (\d+) km ; Magnitude: (.+)/', $description, $matches);
+                    // Robust regex for description parsing
+                    preg_match('/Origin date\/time: (.+?) ; Location: (.+?) ; Lat\/long: ([-\d.]+),([-\d.]+)(?: ; Depth: (\d+) km)? ; Magnitude: ([-\d.]+)/', $description, $matches);
 
                     if ($matches) {
-                        $items[] = [
-                            'time' => Carbon::parse($matches[1])->toDateTimeString(),
-                            'place' => $matches[2],
-                            'latitude' => (float) $matches[3],
-                            'longitude' => (float) $matches[4],
-                            'depth' => (int) $matches[5],
-                            'magnitude' => (float) $matches[6],
-                            'link' => (string) $item->link,
-                        ];
+                        $quakeTime = Carbon::parse($matches[1]);
+                        if ($quakeTime->gte(Carbon::parse($startTime))) {
+                            $items[] = [
+                                'time' => $quakeTime->toDateTimeString(),
+                                'place' => trim($matches[2]),
+                                'latitude' => (float) $matches[3],
+                                'longitude' => (float) $matches[4],
+                                'depth' => isset($matches[5]) ? (int) $matches[5] : 0,
+                                'magnitude' => (float) $matches[6],
+                                'link' => (string) $item->link,
+                            ];
+                        }
+                    } else {
+                        \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
+                        // Fallback parsing using title
+                        $title = (string) $item->title;
+                        if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
+                            $quakeTime = Carbon::parse($item->pubDate);
+                            if ($quakeTime->gte(Carbon::parse($startTime))) {
+                                $items[] = [
+                                    'time' => $quakeTime->toDateTimeString(),
+                                    'place' => trim($titleMatches[2]),
+                                    'latitude' => (float) $item->{'geo:lat'},
+                                    'longitude' => (float) $item->{'geo:long'},
+                                    'depth' => 0,
+                                    'magnitude' => (float) $titleMatches[1],
+                                    'link' => (string) $item->link,
+                                ];
+                            }
+                        }
                     }
                 }
 
+                \Log::info('BGS earthquake count', ['count' => count($items)]);
                 return $items;
             });
 
@@ -58,12 +95,16 @@ class ResourcesController extends Controller
                 ];
             }, $earthquakes);
 
-            $message = empty($earthquakes) ? 'No earthquakes recorded in the UK in the last 50 days.' : null;
+            $message = empty($earthquakes) ? 'No earthquakes recorded in the UK in the last 60 days.' : null;
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
 
             return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
         } catch (\Exception $e) {
-            \Log::error('BGS earthquake data processing failed', ['error' => $e->getMessage()]);
+            \Log::error('BGS MhSeismology data processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            Cache::forget('bgs_earthquakes');
             $message = 'Unable to fetch earthquake data. Please try again later.';
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
             return view('resources.earthquakes', ['earthquakeData' => [], 'message' => $message, 'copyright' => $copyright]);
