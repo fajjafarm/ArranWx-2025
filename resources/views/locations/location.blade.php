@@ -177,6 +177,7 @@
 
                     <!-- Debug Output -->
                     <pre style="text-align: left; font-size: 12px; background: #f8f9fa; padding: 10px; margin-top: 20px;">
+                        Debug: Marine API URL = {{ $weatherData['marine_api_url'] ?? 'N/A' }}
                         Debug: Current = {{ json_encode($weatherData['current'], JSON_PRETTY_PRINT) }}
                         Debug: Hourly = {{ json_encode($weatherData['hourly'], JSON_PRETTY_PRINT) }}
                         Debug: Marine = {{ json_encode($weatherData['marine'], JSON_PRETTY_PRINT) }}
