@@ -233,7 +233,7 @@ class WeatherController extends Controller
         if ($location->type === 'Marine') {
             Log::info("Fetching marine data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
             try {
-                $marineApiUrl = 'https://api.open-meteo.com/v1/marine?' . http_build_query([
+                $marineApiUrl = 'https://marine-api.open-meteo.com/v1/marine?' . http_build_query([
                     'latitude' => $location->latitude,
                     'longitude' => $location->longitude,
                     'hourly' => 'wave_height,sea_surface_temperature,sea_level_height_msl,wave_direction,wave_period,wind_wave_height',
