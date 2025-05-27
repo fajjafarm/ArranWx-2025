@@ -5,6 +5,7 @@ use App\Services\WeatherService;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class WeatherController extends Controller
@@ -22,7 +23,7 @@ class WeatherController extends Controller
      * @param float|null $degrees
      * @return string
      */
-    protected function degreesToCardinal($degrees)
+    public function degreesToCardinal($degrees)
     {
         if ($degrees === null) {
             return 'N/A';
@@ -34,7 +35,6 @@ class WeatherController extends Controller
 
     public function warnings(Request $request)
     {
-        // Simulated API response; replace with real data
         $data = [
             'metOffice' => [
                 'class' => 'weather-no-warning',
@@ -125,7 +125,7 @@ class WeatherController extends Controller
             $weatherData[$location->name] = [
                 'weather' => $weatherDetails,
                 'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
-                'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null, // Added for consistency
+                'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
                 'marine' => $marine,
                 'type' => $location->type,
                 'altitude' => $location->altitude ?? 0,
@@ -160,7 +160,7 @@ class WeatherController extends Controller
             $previousPressure = null;
 
             foreach ($timeseries as $entry) {
-                $time = \Carbon\Carbon::parse($entry['time']);
+                $time = Carbon::parse($entry['time']);
                 if ($time->minute === 0 && $time->hour % 2 === 0) {
                     $date = $time->toDateString();
                     $details = $entry['data']['instant']['details'];
@@ -169,23 +169,17 @@ class WeatherController extends Controller
                         $next1Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
                     }
 
-                    // Calculate Gust
                     $windSpeed = $details['wind_speed'] ?? 0;
                     $cloudCover = $details['cloud_area_fraction'] ?? 0;
                     $pressure = $details['air_pressure_at_sea_level'] ?? null;
                     $altitude = $location->altitude ?? 0;
 
-                    // Base gust factor: 1.5 for villages, 1.6 for hills (open topography)
                     $gustFactor = $location->type === 'Hill' ? 1.6 : 1.5;
-
-                    // Adjust based on cloud cover
                     if ($cloudCover > 75) {
                         $gustFactor += 0.2;
                     } elseif ($cloudCover < 25) {
                         $gustFactor -= 0.1;
                     }
-
-                    // Adjust based on pressure trend
                     if ($previousPressure !== null && $pressure !== null) {
                         $pressureChange = $previousPressure - $pressure;
                         if ($pressureChange > 1) {
@@ -195,11 +189,7 @@ class WeatherController extends Controller
                         }
                     }
                     $previousPressure = $pressure;
-
-                    // Altitude multiplier for hills (1.5% increase per 100m)
                     $altitudeMultiplier = $location->type === 'Hill' ? (1 + ($altitude / 100) * 0.015) : 1;
-
-                    // Use API gust if available, otherwise estimate
                     $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor * $altitudeMultiplier);
 
                     $hourlyData[$date][] = [
@@ -223,7 +213,7 @@ class WeatherController extends Controller
         Log::info("Fetching sun and moon data for {$location->name}");
         $sunMoonData = [];
         for ($i = 0; $i < 10; $i++) {
-            $date = now()->addDays($i)->toDateString();
+            $date = Carbon::now()->addDays($i)->toDateString();
             $sunMoon = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
             $sunMoonData[$date] = [
                 'sunrise' => $sunMoon['sunrise'],
@@ -236,35 +226,87 @@ class WeatherController extends Controller
         Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
 
         $marine = null;
+        $marineForecast = [];
+        $marineHourly = [];
         if ($location->type === 'Marine') {
-            Log::info("Fetching marine data for {$location->name}");
-            $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-            Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
-            if ($marineResponse) {
-                $marine = [
-                    'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
-                    'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
-                    'wave_period' => $marineResponse['hourly']['wave_period'][0] ?? null,
-                    'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][0] ?? null,
-                    'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
-                    'swell_wave_direction' => $marineResponse['hourly']['swell_wave_direction'][0] ?? null,
-                    'swell_wave_period' => $marineResponse['hourly']['swell_wave_period'][0] ?? null,
-                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
-                ];
+            Log::info("Fetching marine data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
+            try {
+                $marineResponse = Http::get('https://api.open-meteo.com/v1/marine', [
+                    'latitude' => $location->latitude,
+                    'longitude' => $location->longitude,
+                    'hourly' => 'wave_height,sea_surface_temperature,sea_level_height_msl,wave_direction,wave_period,wind_wave_height',
+                    'daily' => 'wave_height_max',
+                    'wind_speed_unit' => 'mph',
+                    'timezone' => 'GMT'
+                ])->json();
+
+                Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
+
+                if ($marineResponse && isset($marineResponse['hourly'], $marineResponse['daily'])) {
+                    // Current marine conditions (use current time, 18:00 GMT = 19:00 BST on May 27)
+                    $currentHourIndex = 18; // 18:00 GMT
+                    $marine = [
+                        'wave_height' => $marineResponse['current']['wave_height'] ?? null,
+                        'wave_direction' => $marineResponse['hourly']['wave_direction'][$currentHourIndex] ?? null,
+                        'wave_period' => $marineResponse['hourly']['wave_period'][$currentHourIndex] ?? null,
+                        'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][$currentHourIndex] ?? null,
+                        'swell_wave_height' => null, // Not provided by API
+                        'swell_wave_direction' => null,
+                        'swell_wave_period' => null,
+                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][$currentHourIndex] ?? null,
+                    ];
+
+                    // 3-day marine forecast
+                    $marineForecast = array_map(function ($time, $wave_height_max) {
+                        return [
+                            'date' => $time,
+                            'wave_height_max' => $wave_height_max,
+                        ];
+                    }, array_slice($marineResponse['daily']['time'], 0, 3), array_slice($marineResponse['daily']['wave_height_max'], 0, 3));
+
+                    // Hourly marine data (first 72 hours, May 27–29)
+                    $marineHourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height) {
+                        return [
+                            'time' => $time,
+                            'wave_height' => $wave_height,
+                            'sea_surface_temperature' => $sea_surface_temperature,
+                            'sea_level_height_msl' => $sea_level_height_msl,
+                            'wave_direction' => $wave_direction,
+                            'wave_period' => $wave_period,
+                            'wind_wave_height' => $wind_wave_height,
+                        ];
+                    }, array_slice($marineResponse['hourly']['time'], 0, 72), 
+                       array_slice($marineResponse['hourly']['wave_height'], 0, 72), 
+                       array_slice($marineResponse['hourly']['sea_surface_temperature'], 0, 72), 
+                       array_slice($marineResponse['hourly']['sea_level_height_msl'], 0, 72), 
+                       array_slice($marineResponse['hourly']['wave_direction'], 0, 72), 
+                       array_slice($marineResponse['hourly']['wave_period'], 0, 72), 
+                       array_slice($marineResponse['hourly']['wind_wave_height'], 0, 72));
+                } else {
+                    Log::error("Invalid marine response for {$location->name}", ['response' => $marineResponse]);
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to fetch marine data for {$location->name}", ['error' => $e->getMessage()]);
             }
         }
 
         $weatherData = [
             'current' => $currentWeather,
             'hourly' => $hourlyData,
-            'sun_moon' => $sunMoonData,
+            'sun' => $sunMoonData,
             'marine' => $marine,
+            'marine_forecast' => $marineForecast,
+            'marine_hourly' => $marineHourly,
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,
         ];
 
-        Log::info("Weather data sent to view for {$location->name}", $weatherData);
+        Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
 
-        return view('location', compact('location', 'weatherData'));
+        return view('location', [
+    'location' => $location,
+    'weatherData' => $weatherData,
+    'controller' => $this
+]);
     }
 }
