@@ -19,13 +19,12 @@ class WeatherController extends Controller
 
     /**
      * Convert degrees to cardinal direction
-     *
      * @param float|null $degrees
      * @return string
      */
     public function degreesToCardinal($degrees)
     {
-        if ($degrees === null) {
+        if ($degrees) {
             return 'N/A';
         }
         $directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -39,16 +38,16 @@ class WeatherController extends Controller
             'metOffice' => [
                 'class' => 'weather-no-warning',
                 'text' => 'No Warnings',
-                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
             ],
             'meteogram' => [
                 'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
-                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
             ],
             'sepaFlood' => [
                 'class' => 'weather-no-warning',
                 'text' => 'No Warnings',
-                'updated' => Carbon::now('GMT')->format('d M Y H:i')
+                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
             ]
         ];
 
@@ -72,24 +71,24 @@ class WeatherController extends Controller
         $lochranzaClaonaigStatus = [
             'class' => 'status-green',
             'text' => 'Normal',
-            'updated' => Carbon::create(2025, 3, 10, 11, 49, 0, 'GMT')->format('d M Y H:i')
+            'updated' => Carbon::create(2025, 3, 10, 11, 47, 0, 'GMT')->format('d M Y H:i')
         ];
 
         $metOfficeWarning = [
             'class' => 'weather-no-warning',
             'text' => 'No Warnings',
-            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
         ];
 
         $meteogram = [
             'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
-            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
         ];
 
         $sepaFloodWarning = [
             'class' => 'weather-no-warning',
             'text' => 'No Warnings',
-            'updated' => Carbon::now('GMT')->format('d M Y H:i')
+            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
         ];
 
         $locations = Location::all();
@@ -132,7 +131,7 @@ class WeatherController extends Controller
             ];
         }
 
-        Log::info("Weather data sent to dashboard view", $weatherData);
+        Log::info("Weather data sent to dashboard view", ['weather_data' => $weatherData]);
         return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus',
             'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
     }
@@ -260,7 +259,7 @@ class WeatherController extends Controller
                 }
 
                 if ($marineResponse && isset($marineResponse['hourly'], $marineResponse['daily'])) {
-                    // Current marine conditions (10:45 AM BST, May 28, 2025)
+                    // Current marine conditions (10:53 AM BST, May 28, 2025)
                     $currentHourIndex = 10; // 10:00 GMT
                     if ($isBst) {
                         $currentHourIndex = 9; // 10:00 BST = 09:00 GMT
@@ -303,41 +302,30 @@ class WeatherController extends Controller
                        array_slice($marineResponse['daily']['wind_wave_direction_dominant'], 0, 7));
 
                     // Hourly marine data (168 hours)
-                    $marine = null;
-                    $marineHourly = array_map(function($hours, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height, $swell_wave_height) {
-                    $marine_hourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height, $swell_wave_height) {
+                    $marineHourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height, $swell_wave_height) {
                         return [
                             'time' => $time,
-                            'time' => $time,
+                            'wave_height' => $wave_height,
                             'sea_surface_temperature' => $sea_surface_temperature,
                             'sea_level_height_msl' => $sea_level_height_msl,
                             'wave_direction' => $wave_direction,
-                            'sea_surface_temperature' => $sea_surface_temperature,
-                            'sea_level_height_msl' => $sea_level_height_msl,
-                            'wave_direction' => $wave_direction',
                             'wave_period' => $wave_period,
-                            'wind_wave' => $wind_wave,
                             'wind_wave_height' => $wind_wave_height,
-                            'swell_wave_height' => $swell_wave_height,
                             'swell_wave_height' => $swell_wave_height,
                         ];
                     }, array_slice($marineResponse['hourly']['time'], 0, 168),
-                       array_slice($marineResponse['hourly']['wave'], 0, 168),
+                       array_slice($marineResponse['hourly']['wave_height'], 0, 168),
                        array_slice($marineResponse['hourly']['sea_surface_temperature'], 0, 168),
                        array_slice($marineResponse['hourly']['sea_level_height_msl'], 0, 168),
-                       array_slice($marineResponse['hourly']['wave_direction'], 0, ['168]),
+                       array_slice($marineResponse['hourly']['wave_direction'], 0, 168),
                        array_slice($marineResponse['hourly']['wave_period'], 0, 168),
                        array_slice($marineResponse['hourly']['wind_wave_height'], 0, 168),
                        array_slice($marineResponse['hourly']['swell_wave_height'], 0, 168));
                 } else {
                     Log::error("Invalid marine response for {$location->name}", ['url' => $marineApiUrl, 'response' => $marineResponse]);
-                    } else {
-                        Log::error("Invalid marine response for {$location->name}", ['url' => $marineApiUrl, 'data' => $marineResponse]);
-                    }
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to fetch marine data for {$location->name}", ['url' => $apiUrl, 'error' => $e->getMessage()]);
-                Log::error("Failed to retrieve marine data for {$location->name}", ['error' => $e->getMessage()]);
+                Log::error("Failed to fetch marine data for {$location->name}", ['url' => $marineApiUrl, 'error' => $e->getMessage()]);
             }
         }
 
@@ -347,31 +335,27 @@ class WeatherController extends Controller
             'sun' => $sunMoonData,
             'marine' => $marine,
             'marine_forecast' => $marineForecast,
-            'marine_hourly' => $marine_hourly',
-            'marine_forecast' => $marine_forecast,
-            'daily_marine_data' => $dailyMarineData',
-            'daily_marine_data' => $daily_marine_data,
+            'marine_hourly' => $marineHourly,
+            'daily_marine_data' => $dailyMarineData,
             'type' => $location->type,
-            'altitude' => $location->altitude' ?? null0,
-            'marine_api_url' => $marineApiUrl'
-            'marine_api_url' => $marine_api_url
+            'altitude' => $location->altitude ?? 0,
+            'marine_api_url' => $marineApiUrl
         ];
 
-        Log::info("Weather data sent to view for {$location->name}", ['weatherData' => ['weather_data' => $weatherData]]);
+        Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
 
         // Select view based on location type
         $view = match ($location->type) {
             'Village' => 'village',
             'Hill' => 'hill',
             'Marine' => 'marine',
-            default => throw new \Exception("Invalid location type: {$location->type}"),
-            default => throw new Exception("Invalid location type: {$location->type}"),
+            default => throw new \Exception("Invalid location type: {$location->type}")
         };
 
-        return view($view, $view, [
+        return view($view, [
             'location' => $location,
             'weatherData' => $weatherData,
-            'weather_data' => $weatherData,
-            'controller' => $controller$this
+            'controller' => $this
         ]);
     }
+}
