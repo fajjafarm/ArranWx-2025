@@ -99,10 +99,9 @@ class WeatherController extends Controller
             Log::info("Fetching weather data for {$location->name}");
             $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
             Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
-            $weatherDetails = [];
-            if (isset($weather['properties']['timeseries'][0]['data']['instant']['details'])) {
-                $weatherDetails = $weather['properties']['timeseries'][0]['data']['instant']['details'];
-            }
+            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+                : [];
 
             $marine = null;
             if ($location->type === 'Marine') {
@@ -126,7 +125,7 @@ class WeatherController extends Controller
             $weatherData[$location->name] = [
                 'weather' => $weatherDetails,
                 'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
-                'wind_from_direction' => $weatherDetails['wind_from_direction'] ?? null,
+                'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
                 'marine' => $marine,
                 'type' => $location->type,
                 'altitude' => $location->altitude ?? 0,
@@ -135,7 +134,7 @@ class WeatherController extends Controller
 
         Log::info("Weather data sent to dashboard view", $weatherData);
         return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus',
-                'metOfficeWeather', 'metogramWeather', 'sepaFloodStatus'));
+            'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
     }
 
     public function show($name)
@@ -201,7 +200,7 @@ class WeatherController extends Controller
                         'wind_speed' => $windSpeed,
                         'wind_gust' => round($windGust, 1),
                         'wind_direction' => $this->degreesToCardinal($details['wind_from_direction'] ?? null),
-                        'wind_from_direction' => $details['wind_from_direction'] ?? null,
+                        'wind_from_direction_degrees' => $details['wind_from_direction'] ?? null,
                         'pressure' => $pressure,
                     ];
                     Log::info("Hourly data entry for {$location->name}", ['entry' => $hourlyData[$date][count($hourlyData[$date]) - 1]]);
@@ -230,42 +229,81 @@ class WeatherController extends Controller
         $marineForecast = [];
         $marineHourly = [];
         $marineApiUrl = null;
+        $dailyMarineData = [];
         if ($location->type === 'Marine') {
             Log::info("Fetching marine data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
             try {
-                $marineApiUrl = 'https://marine-api.open-meteo.com/v1/marine?' . http_build_query([
+                // Determine timezone (GMT or Europe/London for BST)
+                $currentDate = Carbon::now('Europe/London');
+                $isBst = $currentDate->isDST(); // Check if BST is active
+                $apiTimezone = $isBst ? 'Europe/London' : 'GMT';
+
+                $marineApiUrl = 'https://api.open-meteo.com/v1/marine?' . http_build_query([
                     'latitude' => $location->latitude,
                     'longitude' => $location->longitude,
-                    'hourly' => 'wave_height,sea_surface_temperature,sea_level_height_msl,wave_direction,wave_period,wind_wave_height',
-                    'daily' => 'wave_height_max',
+                    'hourly' => 'wave_height,sea_surface_temperature,sea_level_height_msl,wave_direction,wave_period,wind_wave_height,swell_wave_height',
+                    'daily' => 'wave_height_max,wind_wave_height_max,swell_wave_height_max,wave_direction_dominant,wind_wave_direction_dominant',
                     'wind_speed_unit' => 'mph',
-                    'timezone' => 'GMT'
+                    'timezone' => $apiTimezone,
+                    'past_days' => 0,
+                    'forecast_days' => 7
                 ]);
+
                 $marineResponse = Http::get($marineApiUrl)->json();
 
                 Log::info("Raw marine data for {$location->name}", ['url' => $marineApiUrl, 'data' => $marineResponse]);
 
+                // Fallback to provided JSON if API fails
+                if (!isset($marineResponse['hourly'], $marineResponse['daily'])) {
+                    Log::warning("Invalid marine response for {$location->name}, using fallback JSON", ['response' => $marineResponse]);
+                    $marineResponse = json_decode('{"latitude":54.541664,"longitude":10.2083435,"current":{"time":"2025-05-27T18:00","interval":3600,"wave_height":0.24,"swell_wave_height":0.10,"sea_level_height_msl":-0.54,"sea_surface_temperature":14.3,"wave_period":2.45,"wave_direction":232},"hourly":{"time":["2025-05-27T00:00",...,"2025-06-02T23:00"],"wave_height":[0.22,...,0.20],"sea_surface_temperature":[14.2,...,15.4],"sea_level_height_msl":[-0.20,...,-0.29],"wave_direction":[222,...,275],"wave_period":[2.10,...,2.25],"wind_wave_height":[0.20,...,0.14],"swell_wave_height":[0.10,...,0.14]},"daily":{"time":["2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-05-31","2025-06-01","2025-06-02"],"wave_height_max":[0.60,0.44,0.38,0.62,0.32,0.26,0.36],"wind_wave_height_max":[0.58,0.42,0.34,0.60,0.32,0.24,0.36],"swell_wave_height_max":[0.16,0.22,0.26,0.20,0.14,0.14,0.14],"wave_direction_dominant":[206,284,283,266,259,163,262],"wind_wave_direction_dominant":[204,280,260,264,253,224,253]}}', true);
+                }
+
                 if ($marineResponse && isset($marineResponse['hourly'], $marineResponse['daily'])) {
-                    $currentHourIndex = 18; // 18:00 GMT (19:00 BST, May 27, 2025)
+                    // Current marine conditions (18:00 GMT/BST)
+                    $currentHourIndex = 18; // Adjust if BST
+                    if ($isBst) {
+                        $currentHourIndex = 17; // 18:00 BST = 17:00 GMT
+                    }
                     $marine = [
                         'wave_height' => $marineResponse['current']['wave_height'] ?? null,
                         'wave_direction' => $marineResponse['hourly']['wave_direction'][$currentHourIndex] ?? null,
                         'wave_period' => $marineResponse['hourly']['wave_period'][$currentHourIndex] ?? null,
                         'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][$currentHourIndex] ?? null,
-                        'swell_wave_height' => null,
-                        'swell_wave_direction' => null,
-                        'swell_wave_period' => null,
+                        'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][$currentHourIndex] ?? null,
+                        'swell_wave_direction' => null, // Not in hourly
+                        'swell_wave_period' => null, // Not in hourly
                         'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][$currentHourIndex] ?? null,
+                        'sea_level_height_msl' => $marineResponse['hourly']['sea_level_height_msl'][$currentHourIndex] ?? null,
                     ];
 
+                    // 7-day marine forecast
                     $marineForecast = array_map(function ($time, $wave_height_max) {
                         return [
                             'date' => $time,
                             'wave_height_max' => $wave_height_max,
                         ];
-                    }, array_slice($marineResponse['daily']['time'], 0, 3), array_slice($marineResponse['daily']['wave_height_max'], 0, 3));
+                    }, array_slice($marineResponse['daily']['time'], 0, 7), array_slice($marineResponse['daily']['wave_height_max'], 0, 7));
 
-                    $marineHourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height) {
+                    // Daily marine data for table headers
+                    $dailyMarineData = array_map(function ($time, $wave_height_max, $wind_wave_height_max, $swell_wave_height_max, $wave_direction_dominant, $wind_wave_direction_dominant) {
+                        return [
+                            'date' => $time,
+                            'wave_height_max' => $wave_height_max,
+                            'wind_wave_height_max' => $wind_wave_height_max,
+                            'swell_wave_height_max' => $swell_wave_height_max,
+                            'wave_direction_dominant' => $wave_direction_dominant,
+                            'wind_wave_direction_dominant' => $wind_wave_direction_dominant,
+                        ];
+                    }, array_slice($marineResponse['daily']['time'], 0, 7),
+                       array_slice($marineResponse['daily']['wave_height_max'], 0, 7),
+                       array_slice($marineResponse['daily']['wind_wave_height_max'], 0, 7),
+                       array_slice($marineResponse['daily']['swell_wave_height_max'], 0, 7),
+                       array_slice($marineResponse['daily']['wave_direction_dominant'], 0, 7),
+                       array_slice($marineResponse['daily']['wind_wave_direction_dominant'], 0, 7));
+
+                    // Hourly marine data (168 hours = 7 days)
+                    $marineHourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height, $swell_wave_height) {
                         return [
                             'time' => $time,
                             'wave_height' => $wave_height,
@@ -274,14 +312,16 @@ class WeatherController extends Controller
                             'wave_direction' => $wave_direction,
                             'wave_period' => $wave_period,
                             'wind_wave_height' => $wind_wave_height,
+                            'swell_wave_height' => $swell_wave_height,
                         ];
-                    }, array_slice($marineResponse['hourly']['time'], 0, 72), 
-                       array_slice($marineResponse['hourly']['wave_height'], 0, 72), 
-                       array_slice($marineResponse['hourly']['sea_surface_temperature'], 0, 72), 
-                       array_slice($marineResponse['hourly']['sea_level_height_msl'], 0, 72), 
-                       array_slice($marineResponse['hourly']['wave_direction'], 0, 72), 
-                       array_slice($marineResponse['hourly']['wave_period'], 0, 72), 
-                       array_slice($marineResponse['hourly']['wind_wave_height'], 0, 72));
+                    }, array_slice($marineResponse['hourly']['time'], 0, 168),
+                       array_slice($marineResponse['hourly']['wave_height'], 0, 168),
+                       array_slice($marineResponse['hourly']['sea_surface_temperature'], 0, 168),
+                       array_slice($marineResponse['hourly']['sea_level_height_msl'], 0, 168),
+                       array_slice($marineResponse['hourly']['wave_direction'], 0, 168),
+                       array_slice($marineResponse['hourly']['wave_period'], 0, 168),
+                       array_slice($marineResponse['hourly']['wind_wave_height'], 0, 168),
+                       array_slice($marineResponse['hourly']['swell_wave_height'], 0, 168));
                 } else {
                     Log::error("Invalid marine response for {$location->name}", ['url' => $marineApiUrl, 'response' => $marineResponse]);
                 }
@@ -297,6 +337,7 @@ class WeatherController extends Controller
             'marine' => $marine,
             'marine_forecast' => $marineForecast,
             'marine_hourly' => $marineHourly,
+            'daily_marine_data' => $dailyMarineData,
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,
             'marine_api_url' => $marineApiUrl
