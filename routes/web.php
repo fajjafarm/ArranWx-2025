@@ -5,7 +5,6 @@ use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\ResourcesController;
 use App\Http\Controllers\RoutingController;
 
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -17,7 +16,12 @@ use App\Http\Controllers\RoutingController;
 |
 */
 
-// Main dashboard route
+// Specific routes
+Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
+Route::get('/home', fn () => view('dashboards.index'))->name('home');
+Route::get('/warnings', [WeatherController::class, 'warnings'])->name('dashboard.warnings');
+Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
+
 Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/earthquakes-near-arran', [ResourcesController::class, 'earthquakes'])->name('earthquakes');
     Route::get('/ships-near-arran', [ResourcesController::class, 'shipAis'])->name('ship-ais');
@@ -29,16 +33,8 @@ Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/tides', [ResourcesController::class, 'tides'])->name('tides');
     Route::get('/arran-webcams', [ResourcesController::class, 'webcams'])->name('webcams');
 });
-Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
-Route::get('/warnings', [DashboardController::class, 'warnings'])->name('dashboard.warnings');
-Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
-Route::get('/home', fn()=>view('dashboards.index'))->name('home');
+
+// Catch-all routes (must be last)
 Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])->name('third');
 Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])->name('second');
 Route::get('{any}', [RoutingController::class, 'root'])->name('any');
-
-
-
-// Optional future routes (commented out for now)
-// Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
-// Route::get('/marine/{name}', [WeatherController::class, 'marine'])->name('marine.show');
