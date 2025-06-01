@@ -11,6 +11,9 @@
             </div>
         @endif
 
+        <!-- Debug Output -->
+        <pre>Debug: {{ print_r($auroraData, true) }}</pre>
+
         @if (!empty($auroraData['kp_forecast']))
             <!-- Chart.js Bar Chart -->
             <canvas id="kp-chart" style="max-height: 400px; margin-bottom: 20px;"></canvas>

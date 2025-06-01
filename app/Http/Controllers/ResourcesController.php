@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use App\Models\Earthquake;
+use App\Models\AuroraForecast;
 use Carbon\Carbon;
 use SimpleXMLElement;
 
@@ -175,42 +175,74 @@ class ResourcesController extends Controller
     public function aurora()
     {
         try {
-            // Cache aurora forecast for 1 hour
-            $auroraData = Cache::remember('aurora_forecast', now()->addHour(), function () {
-                try {
-                    $response = Http::retry(3, 1000)->timeout(10)->get('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
-                    if (!$response->successful()) {
-                        \Log::error('NOAA Kp forecast request failed', ['status' => $response->status()]);
-                        return ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
-                    }
+            // Check database for cached forecast (within 1 hour)
+            $cachedForecast = AuroraForecast::where('cached_at', '>=', now()->subHour())
+                ->orderBy('time')
+                ->get();
 
+            if ($cachedForecast->isNotEmpty()) {
+                $forecast = $cachedForecast->map(function ($entry) {
+                    return [
+                        'time' => $entry->time->toDateTimeString(),
+                        'kp' => $entry->kp,
+                        'label' => $entry->label,
+                    ];
+                })->toArray();
+                $max_kp = $cachedForecast->max('kp');
+                $message = $this->getAuroraMessage($max_kp);
+                $auroraData = ['kp_forecast' => $forecast, 'message' => $message, 'max_kp' => $max_kp];
+            } else {
+                // Fetch new forecast
+                $response = Http::retry(3, 1000)->timeout(10)->get('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+
+                if (!$response->successful()) {
+                    \Log::error('NOAA Kp forecast request failed', ['status' => $response->status()]);
+                    $auroraData = $this->getFallbackAuroraData();
+                } else {
                     $data = $response->json();
                     $kp_forecast = array_slice($data, 1); // Skip header
                     $forecast = [];
                     $max_kp = 0;
 
                     foreach ($kp_forecast as $entry) {
-                        $time = Carbon::parse($entry[0]);
-                        $kp = (float) $entry[1];
-                        if ($time->isFuture() && $time->lte(now()->addDays(3))) {
-                            $forecast[] = [
-                                'time' => $time->toDateTimeString(),
-                                'kp' => $kp,
-                                'label' => $time->format('M d H:i'),
-                            ];
-                            $max_kp = max($max_kp, $kp);
+                        try {
+                            $time = Carbon::parse($entry[0]);
+                            $kp = (float) $entry[1];
+                            if ($time->gte(now()->subHours(3)) && $time->lte(now()->addDays(3))) { // Include recent and future
+                                $forecast[] = [
+                                    'time' => $time->toDateTimeString(),
+                                    'kp' => $kp,
+                                    'label' => $time->format('M d H:i'),
+                                ];
+                                $max_kp = max($max_kp, $kp);
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to parse Kp forecast entry', ['entry' => $entry, 'error' => $e->getMessage()]);
                         }
                     }
 
-                    // Aurora visibility message
-                    $message = $this->getAuroraMessage($max_kp);
+                    // Store in database
+                    if (!empty($forecast)) {
+                        AuroraForecast::truncate(); // Clear old data
+                        foreach ($forecast as $item) {
+                            AuroraForecast::create([
+                                'time' => $item['time'],
+                                'kp' => $item['kp'],
+                                'label' => $item['label'],
+                                'cached_at' => now(),
+                            ]);
+                        }
+                    }
 
-                    return ['kp_forecast' => $forecast, 'message' => $message, 'max_kp' => $max_kp];
-                } catch (\Exception $e) {
-                    \Log::error('Aurora forecast processing failed', ['error' => $e->getMessage()]);
-                    return ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
+                    $message = $this->getAuroraMessage($max_kp);
+                    $auroraData = ['kp_forecast' => $forecast, 'message' => $message, 'max_kp' => $max_kp];
+
+                    if (empty($forecast)) {
+                        \Log::warning('No valid Kp forecast data found');
+                        $auroraData = $this->getFallbackAuroraData();
+                    }
                 }
-            });
+            }
 
             \Log::info('Aurora forecast rendered', ['kp_count' => count($auroraData['kp_forecast'])]);
 
@@ -220,7 +252,7 @@ class ResourcesController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            $auroraData = ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
+            $auroraData = $this->getFallbackAuroraData();
             return view('resources.aurora', compact('auroraData'));
         }
     }
@@ -236,5 +268,25 @@ class ResourcesController extends Controller
         } else {
             return 'Low geomagnetic activity. Aurora unlikely to be visible in the UK, except possibly in far northern Scotland under clear skies.';
         }
+    }
+
+    protected function getFallbackAuroraData()
+    {
+        // Fallback data for June 1–3, 2025 (sample)
+        $startTime = now()->startOfDay();
+        $forecast = [];
+        for ($i = 0; $i < 24; $i++) { // 3 days, 8 periods/day
+            $time = $startTime->copy()->addHours($i * 3);
+            $forecast[] = [
+                'time' => $time->toDateTimeString(),
+                'kp' => 3.0, // Default low activity
+                'label' => $time->format('M d H:i'),
+            ];
+        }
+        return [
+            'kp_forecast' => $forecast,
+            'message' => 'Unable to fetch aurora forecast data. Displaying sample data.',
+            'max_kp' => 3.0,
+        ];
     }
 }
