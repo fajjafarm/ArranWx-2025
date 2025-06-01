@@ -19,11 +19,14 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
         <script>
             try {
-                var ctx = document.getElementById('kp-chart').getContext('2d');
                 var kpData = @json($auroraData['kp_forecast']);
-                var labels = kpData.length ? kpData.map(item => item.label) : ['No Data'];
-                var kpValues = kpData.length ? kpData.map(item => item.kp) : [0];
+                console.log('Kp Data:', kpData); // Debug data
 
+                // Fallback if kpData is empty
+                var labels = kpData && kpData.length ? kpData.map(item => item.label || 'Unknown') : ['No Data'];
+                var kpValues = kpData && kpData.length ? kpData.map(item => item.kp || 0) : [0];
+
+                var ctx = document.getElementById('kp-chart').getContext('2d');
                 var chart = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -88,15 +91,6 @@
         @else
             <p class="text-muted">No aurora forecast data available.</p>
         @endif
-
-        <canvas id="chart"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-<script>
-    new Chart(document.getElementById('chart'), {
-        type: 'bar',
-        data: { labels: ['Jun 01 15:00'], datasets: [{ label: 'Kp', data: [5] }] }
-    });
-</script>
 
         <!-- Source Links -->
         <h5>Sources</h5>
