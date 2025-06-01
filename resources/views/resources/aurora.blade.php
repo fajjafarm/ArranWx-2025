@@ -11,17 +11,68 @@
             </div>
         @endif
 
-        <!-- Debug Output -->
-        <pre>Debug: {{ print_r($auroraData, true) }}</pre>
+        <!-- Leaflet.js Map -->
+        <h5>Aurora Visibility Map</h5>
+        <div id="aurora-map" style="height: 400px; margin-bottom: 20px;"></div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script>
+            var map = L.map('aurora-map').setView([54, -2], 6); // Center on UK
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            var maxKp = @json($auroraData['max_kp']);
+            var bands = [
+                { kp: 7, color: 'rgba(255, 99, 132, 0.3)', lat: 50, label: 'Southern UK (~50°N, Kp≥7)' },
+                { kp: 5, color: 'rgba(255, 159, 64, 0.3)', lat: 54, label: 'Central UK (~54°N, Kp≥5)' },
+                { kp: 4, color: 'rgba(54, 162, 235, 0.3)', lat: 58, label: 'Northern Scotland (~58°N, Kp≥4)' },
+                { kp: 0, color: 'rgba(75, 192, 192, 0.3)', lat: 60, label: 'Minimal Visibility (Kp<4)' }
+            ];
+
+            // Add bands up to maxKp
+            bands.forEach(function(band) {
+                if (maxKp >= band.kp) {
+                    var polygon = L.polygon([
+                        [band.lat, -10], [band.lat, 5], // UK longitude range
+                        [band.lat + (band.kp === 0 ? 10 : bands.find(b => b.kp > band.kp)?.lat || 70), 5],
+                        [band.lat + (band.kp === 0 ? 10 : bands.find(b => b.kp > band.kp)?.lat || 70), -10]
+                    ], {
+                        color: band.color,
+                        fillColor: band.color,
+                        fillOpacity: 0.3,
+                        weight: 1
+                    }).addTo(map);
+                    polygon.bindTooltip(band.label, { sticky: true });
+                }
+            });
+
+            // Add legend
+            var legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function() {
+                var div = L.DomUtil.create('div', 'info legend');
+                div.style.background = 'white';
+                div.style.padding = '6px 8px';
+                div.style.border = '1px solid #ccc';
+                bands.forEach(function(band) {
+                    if (maxKp >= band.kp) {
+                        div.innerHTML += '<i style="background:' + band.color + ';width:18px;height:18px;display:inline-block;"></i> ' +
+                            band.label + '<br>';
+                    }
+                });
+                return div;
+            };
+            legend.addTo(map);
+        </script>
 
         <!-- Chart.js Bar Chart -->
+        <h5>Kp Index Forecast</h5>
         <canvas id="kp-chart" style="max-height: 400px; margin-bottom: 20px;"></canvas>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
         <script>
             try {
                 var kpData = @json($auroraData['kp_forecast']);
-                console.log('Kp Data:', kpData);
-
+                
                 // Fallback if kpData is empty
                 var labels = kpData && kpData.length ? kpData.map(item => item.label || 'Unknown') : ['No Data'];
                 var kpValues = kpData && kpData.length ? kpData.map(item => item.kp || 0) : [0];
@@ -98,4 +149,13 @@
             <li><a href="https://www.swpc.noaa.gov/" target="_blank">NOAA Space Weather Prediction Center</a> - Kp Index Forecast</li>
         </ul>
     </div>
+
+    <style>
+        .info.legend {
+            background: white;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            font-size: 12px;
+        }
+    </style>
 @endsection
