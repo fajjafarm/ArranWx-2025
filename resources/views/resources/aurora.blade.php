@@ -92,7 +92,7 @@
             <p class="text-muted">No aurora forecast data available.</p>
         @endif
 
-        <!-- Source Links -->
+        <!-- Source Links  -->
         <h5>Sources</h5>
         <ul class="list-unstyled">
             <li><a href="https://www.swpc.noaa.gov/" target="_blank">NOAA Space Weather Prediction Center</a> - Kp Index Forecast</li>
