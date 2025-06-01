@@ -12,7 +12,7 @@
         @endif
 
         <!-- Leaflet.js Map -->
-        <h5>Aurora Visibility Map</h5>
+        <h5>Aurora Visibility Map (Estimated, weather dependant)</h5>
         <div id="aurora-map" style="height: 400px; margin-bottom: 20px;"></div>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,10 +24,10 @@
 
             var maxKp = @json($auroraData['max_kp']);
             var bands = [
-                { kp: 7, color: 'rgba(255, 99, 132, 0.3)', lat: 50, label: 'Southern UK (~50°N, Kp≥7)' },
-                { kp: 5, color: 'rgba(255, 159, 64, 0.3)', lat: 54, label: 'Central UK (~54°N, Kp≥5)' },
-                { kp: 4, color: 'rgba(54, 162, 235, 0.3)', lat: 58, label: 'Northern Scotland (~58°N, Kp≥4)' },
-                { kp: 0, color: 'rgba(75, 192, 192, 0.3)', lat: 60, label: 'Minimal Visibility (Kp<4)' }
+                { kp: 7, color: 'rgba(255, 99, 132, 0.5)', lat: 50, label: 'Southern UK (~50°N, Kp≥7)' },
+                { kp: 5, color: 'rgba(255, 159, 64, 0.5)', lat: 54, label: 'Central UK (~54°N, Kp≥5)' },
+                { kp: 4, color: 'rgba(54, 162, 235, 0.5)', lat: 58, label: 'Northern Scotland (~58°N, Kp≥4)' },
+                { kp: 0, color: 'rgba(75, 192, 192, 0.5)', lat: 60, label: 'Minimal Visibility (Kp<4)' }
             ];
 
             // Add bands up to maxKp
@@ -40,8 +40,8 @@
                     ], {
                         color: band.color,
                         fillColor: band.color,
-                        fillOpacity: 0.3,
-                        weight: 1
+                        fillOpacity: 0.5, // Increased opacity
+                        weight: 2 // Increased border weight
                     }).addTo(map);
                     polygon.bindTooltip(band.label, { sticky: true });
                 }
