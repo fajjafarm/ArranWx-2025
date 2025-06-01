@@ -180,6 +180,8 @@ class ResourcesController extends Controller
                 ->orderBy('time')
                 ->get();
 
+            \Log::debug('Aurora cache check', ['count' => $cachedForecast->count()]);
+
             if ($cachedForecast->isNotEmpty()) {
                 $forecast = $cachedForecast->map(function ($entry) {
                     return [
@@ -196,10 +198,11 @@ class ResourcesController extends Controller
                 $response = Http::retry(3, 1000)->timeout(10)->get('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
 
                 if (!$response->successful()) {
-                    \Log::error('NOAA Kp forecast request failed', ['status' => $response->status()]);
+                    \Log::error('NOAA Kp forecast request failed', ['status' => $response->status(), 'body' => substr($response->body(), 0, 500)]);
                     $auroraData = $this->getFallbackAuroraData();
                 } else {
                     $data = $response->json();
+                    \Log::debug('NOAA Kp API response', ['data' => array_slice($data, 0, 5)]); // Log first 5 entries
                     $kp_forecast = array_slice($data, 1); // Skip header
                     $forecast = [];
                     $max_kp = 0;
@@ -208,7 +211,7 @@ class ResourcesController extends Controller
                         try {
                             $time = Carbon::parse($entry[0]);
                             $kp = (float) $entry[1];
-                            if ($time->gte(now()->subHours(3)) && $time->lte(now()->addDays(3))) { // Include recent and future
+                            if ($time->gte(now()->startOfDay()) && $time->lte(now()->addDays(3))) { // Include today
                                 $forecast[] = [
                                     'time' => $time->toDateTimeString(),
                                     'kp' => $kp,
@@ -220,6 +223,8 @@ class ResourcesController extends Controller
                             \Log::warning('Failed to parse Kp forecast entry', ['entry' => $entry, 'error' => $e->getMessage()]);
                         }
                     }
+
+                    \Log::debug('Parsed Kp forecast', ['count' => count($forecast), 'sample' => array_slice($forecast, 0, 3)]);
 
                     // Store in database
                     if (!empty($forecast)) {
@@ -272,17 +277,18 @@ class ResourcesController extends Controller
 
     protected function getFallbackAuroraData()
     {
-        // Fallback data for June 1–3, 2025 (sample)
+        // Fallback data for June 1–3, 2025
         $startTime = now()->startOfDay();
         $forecast = [];
         for ($i = 0; $i < 24; $i++) { // 3 days, 8 periods/day
             $time = $startTime->copy()->addHours($i * 3);
             $forecast[] = [
                 'time' => $time->toDateTimeString(),
-                'kp' => 3.0, // Default low activity
+                'kp' => 3.0,
                 'label' => $time->format('M d H:i'),
             ];
         }
+        \Log::info('Using fallback aurora data', ['count' => count($forecast)]);
         return [
             'kp_forecast' => $forecast,
             'message' => 'Unable to fetch aurora forecast data. Displaying sample data.',

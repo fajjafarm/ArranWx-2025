@@ -14,15 +14,15 @@
         <!-- Debug Output -->
         <pre>Debug: {{ print_r($auroraData, true) }}</pre>
 
-        @if (!empty($auroraData['kp_forecast']))
-            <!-- Chart.js Bar Chart -->
-            <canvas id="kp-chart" style="max-height: 400px; margin-bottom: 20px;"></canvas>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-            <script>
+        <!-- Chart.js Bar Chart -->
+        <canvas id="kp-chart" style="max-height: 400px; margin-bottom: 20px;"></canvas>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+        <script>
+            try {
                 var ctx = document.getElementById('kp-chart').getContext('2d');
                 var kpData = @json($auroraData['kp_forecast']);
-                var labels = kpData.map(item => item.label);
-                var kpValues = kpData.map(item => item.kp);
+                var labels = kpData.length ? kpData.map(item => item.label) : ['No Data'];
+                var kpValues = kpData.length ? kpData.map(item => item.kp) : [0];
 
                 var chart = new Chart(ctx, {
                     type: 'bar',
@@ -32,10 +32,10 @@
                             label: 'Kp Index',
                             data: kpValues,
                             backgroundColor: kpValues.map(kp => {
-                                if (kp >= 7) return 'rgba(255, 99, 132, 0.7)'; // Strong (G3–G5)
-                                if (kp >= 5) return 'rgba(255, 159, 64, 0.7)'; // Moderate (G1–G2)
-                                if (kp >= 4) return 'rgba(54, 162, 235, 0.7)'; // Minor
-                                return 'rgba(75, 192, 192, 0.7)'; // Low
+                                if (kp >= 7) return 'rgba(255, 99, 132, 0.7)';
+                                if (kp >= 5) return 'rgba(255, 159, 64, 0.7)';
+                                if (kp >= 4) return 'rgba(54, 162, 235, 0.7)';
+                                return 'rgba(75, 192, 192, 0.7)';
                             }),
                             borderColor: 'rgba(0, 0, 0, 0.1)',
                             borderWidth: 1
@@ -53,52 +53,16 @@
                             }
                         },
                         plugins: {
-                            annotation: {
-                                annotations: {
-                                    line4: {
-                                        type: 'line',
-                                        yMin: 4,
-                                        yMax: 4,
-                                        borderColor: 'rgba(54, 162, 235, 0.5)',
-                                        borderWidth: 2,
-                                        label: {
-                                            content: 'Northern Scotland (~58°N)',
-                                            enabled: true,
-                                            position: 'start'
-                                        }
-                                    },
-                                    line5: {
-                                        type: 'line',
-                                        yMin: 5,
-                                        yMax: 5,
-                                        borderColor: 'rgba(255, 159, 64, 0.5)',
-                                        borderWidth: 2,
-                                        label: {
-                                            content: 'Central UK (~54°N)',
-                                            enabled: true,
-                                            position: 'start'
-                                        }
-                                    },
-                                    line7: {
-                                        type: 'line',
-                                        yMin: 7,
-                                        yMax: 7,
-                                        borderColor: 'rgba(255, 99, 132, 0.5)',
-                                        borderWidth: 2,
-                                        label: {
-                                            content: 'Southern UK (~50°N)',
-                                            enabled: true,
-                                            position: 'start'
-                                        }
-                                    }
-                                }
-                            },
                             legend: { display: false }
                         }
                     }
                 });
-            </script>
+            } catch (error) {
+                console.error('Chart.js error:', error);
+            }
+        </script>
 
+        @if (!empty($auroraData['kp_forecast']))
             <!-- Kp Strength Table -->
             <h5>Kp Index and Aurora Visibility</h5>
             <table class="table table-striped">
