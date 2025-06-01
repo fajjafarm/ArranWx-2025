@@ -89,6 +89,15 @@
             <p class="text-muted">No aurora forecast data available.</p>
         @endif
 
+        <canvas id="chart"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script>
+    new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: { labels: ['Jun 01 15:00'], datasets: [{ label: 'Kp', data: [5] }] }
+    });
+</script>
+
         <!-- Source Links -->
         <h5>Sources</h5>
         <ul class="list-unstyled">
