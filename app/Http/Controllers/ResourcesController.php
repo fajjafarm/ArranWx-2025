@@ -20,14 +20,13 @@ class ResourcesController extends Controller
             // Clean up quakes older than 90 days
             Earthquake::where('time', '<', now()->subDays(90))->delete();
 
-            // Cache database query results for 4 hours
+            // Cache earthquake data for 4 hours
             $earthquakeData = Cache::remember('bgs_earthquakes', now()->addHours(4), function () use ($startTime, $endTime) {
-                // Fetch and update database
                 try {
                     $response = Http::retry(3, 1000)->timeout(10)->get('https://quakes.bgs.ac.uk/feeds/MhSeismology.xml');
 
                     if (!$response->successful()) {
-                        \Log::error('BGS MhSeismology GeoRSS request failed', [
+                        \Log::error('BGS GeoRSS request failed', [
                             'status' => $response->status(),
                             'body' => substr($response->body(), 0, 500),
                         ]);
@@ -36,13 +35,13 @@ class ResourcesController extends Controller
 
                     $body = $response->body();
                     if (empty($body) || strpos($body, '<rss') === false) {
-                        \Log::error('BGS MhSeismology feed is empty or invalid', ['body' => substr($body, 0, 500)]);
+                        \Log::error('BGS feed is empty or invalid', ['body' => substr($body, 0, 500)]);
                         return $this->fetchFromDatabase($startTime, $endTime);
                     }
 
                     $xml = new SimpleXMLElement($body);
                     if (!isset($xml->channel->item)) {
-                        \Log::warning('BGS MhSeismology feed has no items', ['xml' => (string) $xml->asXML()]);
+                        \Log::warning('BGS feed has no items', ['xml' => (string) $xml->asXML()]);
                         return $this->fetchFromDatabase($startTime, $endTime);
                     }
 
@@ -72,7 +71,7 @@ class ResourcesController extends Controller
                                 $items[] = $quakeData;
                             }
                         } else {
-                            \Log::warning('Failed to parse BGS MhSeismology item', ['description' => $description]);
+                            \Log::warning('Failed to parse BGS item', ['description' => $description]);
                             $title = (string) $item->title;
                             if (preg_match('/M ([-\d.]+) :(.+)/', $title, $titleMatches)) {
                                 $quakeTime = Carbon::parse($item->pubDate);
@@ -104,7 +103,6 @@ class ResourcesController extends Controller
                     return $this->fetchFromDatabase($startTime, $endTime);
                 }
 
-                // Query database for all quakes in the time range
                 return $this->fetchFromDatabase($startTime, $endTime);
             });
 
@@ -127,8 +125,6 @@ class ResourcesController extends Controller
             $copyright = 'Contains British Geological Survey materials © UKRI ' . date('Y') . '.';
 
             $earthquakeData = $this->fetchFromDatabase($startTime, $endTime);
-
-            // Sort by distance
             usort($earthquakeData, fn($a, $b) => $a['distance'] <=> $b['distance']);
 
             return view('resources.earthquakes', compact('earthquakeData', 'message', 'copyright'));
@@ -141,21 +137,19 @@ class ResourcesController extends Controller
             ->orderBy('time', 'desc')
             ->get()
             ->map(function ($quake) {
-                // Highlight for Arran, Clyde, or distance < 20 miles
                 $highlight = stripos($quake->place, 'Arran') !== false ||
                              stripos($quake->place, 'Clyde') !== false ||
                              $this->calculateDistance(55.6, -5.3, $quake->latitude, $quake->longitude) < 20;
-                // Calculate distance from Arran (55.6°N, -5.3°E)
                 $distance = $this->calculateDistance(55.6, -5.3, $quake->latitude, $quake->longitude);
                 return [
                     'time' => $quake->time->toDateTimeString(),
                     'place' => $quake->place,
                     'magnitude' => $quake->magnitude,
-                    'distance' => round($distance), // Round to nearest mile
+                    'distance' => round($distance),
                     'highlight' => $highlight,
                     'link' => $quake->link,
-                    'latitude' => $quake->latitude, // For Leaflet
-                    'longitude' => $quake->longitude, // For Leaflet
+                    'latitude' => $quake->latitude,
+                    'longitude' => $quake->longitude,
                 ];
             })->toArray();
     }
@@ -178,152 +172,69 @@ class ResourcesController extends Controller
         return $earthRadius * $c;
     }
 
-            public function shipAis()
+    public function aurora()
     {
-        $mapParams = [
-            'width' => '100%',
-            'height' => '600',
-            'latitude' => 55.6,
-            'longitude' => -5.3,
-            'zoom' => 10,
-            'names' => true,
-        ];
-        $vesselLinks = [
-            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona'],
-            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox'],
-            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred'],
-        ];
-        return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
-    }
+        try {
+            // Cache aurora forecast for 1 hour
+            $auroraData = Cache::remember('aurora_forecast', now()->addHour(), function () {
+                try {
+                    $response = Http::retry(3, 1000)->timeout(10)->get('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+                    if (!$response->successful()) {
+                        \Log::error('NOAA Kp forecast request failed', ['status' => $response->status()]);
+                        return ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
+                    }
 
-    public function shipCatriona()
-    {
-        $mapParams = [
-            'width' => '100%',
-            'height' => '600',
-            'latitude' => 55.6,
-            'longitude' => -5.3,
-            'zoom' => 11,
-            'mmsi' => '235116772',
-            'names' => true,
-        ];
-        $vesselName = 'MV Catriona';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
-    }
+                    $data = $response->json();
+                    $kp_forecast = array_slice($data, 1); // Skip header
+                    $forecast = [];
+                    $max_kp = 0;
 
-    public function shipGlenSannox()
-    {
-        $mapParams = [
-            'width' => '100%',
-            'height' => '600',
-            'latitude' => 55.6,
-            'longitude' => -5.3,
-            'zoom' => 11,
-            'mmsi' => '232049068',
-            'names' => true,
-        ];
-        $vesselName = 'MV Glen Sannox';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
-    }
+                    foreach ($kp_forecast as $entry) {
+                        $time = Carbon::parse($entry[0]);
+                        $kp = (float) $entry[1];
+                        if ($time->isFuture() && $time->lte(now()->addDays(3))) {
+                            $forecast[] = [
+                                'time' => $time->toDateTimeString(),
+                                'kp' => $kp,
+                                'label' => $time->format('M d H:i'),
+                            ];
+                            $max_kp = max($max_kp, $kp);
+                        }
+                    }
 
-    public function shipAlfred()
-    {
-        $mapParams = [
-            'width' => '100%',
-            'height' => '600',
-            'latitude' => 55.6,
-            'longitude' => -5.3,
-            'zoom' => 11,
-            'mmsi' => '232019501',
-            'names' => true,
-        ];
-        $vesselName = 'MV Alfred';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
-    }
+                    // Aurora visibility message
+                    $message = $this->getAuroraMessage($max_kp);
 
+                    return ['kp_forecast' => $forecast, 'message' => $message, 'max_kp' => $max_kp];
+                } catch (\Exception $e) {
+                    \Log::error('Aurora forecast processing failed', ['error' => $e->getMessage()]);
+                    return ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
+                }
+            });
 
+            \Log::info('Aurora forecast rendered', ['kp_count' => count($auroraData['kp_forecast'])]);
 
-    public function flightRadar()
-    {
-        // FlightRadar24 embed URL (free map centered on Arran)
-        $mapUrl = 'https://www.flightradar24.com/55.6,-5.3/10';
-        return view('resources.flight-radar', compact('mapUrl'));
-    }
-
-    public function lightning()
-    {
-        // Blitzortung embed URL (free lightning map centered on Arran)
-        $mapUrl = 'https://www.blitzortung.org/en/live_lightning_maps.php?map=10';
-        return view('resources.lightning', compact('mapUrl'));
-    }
-
-    public function tides()
-    {
-        // Tide data (simulated for Lamlash, Brodick, Lochranza)
-        // Note: Replace with real tide API if available (e.g., TideAPI or UK Hydrographic Office)
-        $locations = ['Lamlash', 'Brodick', 'Lochranza'];
-        $tideData = [];
-
-        foreach ($locations as $location) {
-            // Simulated tide times for demonstration
-            $tideData[$location] = [
-                'date' => Carbon::today()->toDateString(),
-                'high_tides' => [
-                    ['time' => '06:30', 'height' => '3.2m'],
-                    ['time' => '18:45', 'height' => '3.4m'],
-                ],
-                'low_tides' => [
-                    ['time' => '12:15', 'height' => '0.8m'],
-                    ['time' => '00:30', 'height' => '0.7m'],
-                ],
-            ];
+            return view('resources.aurora', compact('auroraData'));
+        } catch (\Exception $e) {
+            \Log::error('Aurora processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $auroraData = ['kp_forecast' => [], 'message' => 'Unable to fetch aurora forecast data.', 'max_kp' => 0];
+            return view('resources.aurora', compact('auroraData'));
         }
-
-        return view('resources.tides', compact('tideData', 'locations'));
     }
-public function webcams()
+
+    protected function getAuroraMessage($max_kp)
     {
-        $webcams = [
-            [
-                'title' => 'Brodick Ferry Terminal (CMAL)',
-                'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
-                'source' => 'Caledonian Maritime Assets Ltd',
-                'type' => 'iframe',
-            ],
-            [
-                'title' => 'Lochranza Ferry Terminal (CMAL)',
-                'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
-                'source' => 'Caledonian Maritime Assets Ltd',
-                'type' => 'iframe',
-            ],
-            [
-                'title' => 'B880 String Road Cam (West)',
-                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
-                'source' => 'North Ayrshire Council',
-                'type' => 'image',
-            ],
-            [
-                'title' => 'B880 String Road Cam (East)',
-                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
-                'source' => 'North Ayrshire Council',
-                'type' => 'image',
-            ],
-            [
-                'title' => 'Brodick Bay towards Goatfell',
-                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
-                'source' => 'Cottages on Arran',
-                'type' => 'link',
-            ],
-            [
-                'title' => 'Brodick Ferry Port',
-                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
-                'source' => 'Cottages on Arran',
-                'type' => 'link',
-            ],
-        ];
-
-        $nacRoadCamsLink = 'https://www.north-ayrshire.gov.uk/roads-and-parking/road-cams';
-
-        return view('resources.webcams', compact('webcams', 'nacRoadCamsLink'));
+        if ($max_kp >= 7) {
+            return 'Strong geomagnetic storm (G3–G5) expected. Aurora may be visible across the UK, including southern England.';
+        } elseif ($max_kp >= 5) {
+            return 'Moderate geomagnetic activity (G1–G2) expected. Aurora likely visible in northern and central UK, including Scotland and Northern Ireland.';
+        } elseif ($max_kp >= 4) {
+            return 'Minor geomagnetic activity expected. Aurora may be visible in northern Scotland.';
+        } else {
+            return 'Low geomagnetic activity. Aurora unlikely to be visible in the UK, except possibly in far northern Scotland under clear skies.';
+        }
     }
 }

@@ -98,6 +98,11 @@
                     <span class="menu-text">Arran Webcams</span>
                 </a>
             </li>
+            <li class="side-nav-item">
+    <a href="{{ route('resources.aurora') }}" class="side-nav-link">
+        <span class="menu-text">Northern Lights</span>
+    </a>
+</li>
         </ul>
     </div>
 </li>

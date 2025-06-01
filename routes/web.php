@@ -32,6 +32,7 @@ Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/lightning-near-arran', [ResourcesController::class, 'lightning'])->name('lightning');
     Route::get('/tides', [ResourcesController::class, 'tides'])->name('tides');
     Route::get('/arran-webcams', [ResourcesController::class, 'webcams'])->name('webcams');
+    Route::get('/aurora-borealis-northern-lights', [ResourcesController::class, 'aurora'])->name('aurora');
 });
 
 // Catch-all routes (must be last)
