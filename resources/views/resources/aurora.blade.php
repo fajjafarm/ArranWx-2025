@@ -16,11 +16,11 @@
 
         <!-- Chart.js Bar Chart -->
         <canvas id="kp-chart" style="max-height: 400px; margin-bottom: 20px;"></canvas>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
         <script>
             try {
                 var kpData = @json($auroraData['kp_forecast']);
-                console.log('Kp Data:', kpData); // Debug data
+                console.log('Kp Data:', kpData);
 
                 // Fallback if kpData is empty
                 var labels = kpData && kpData.length ? kpData.map(item => item.label || 'Unknown') : ['No Data'];
@@ -92,7 +92,7 @@
             <p class="text-muted">No aurora forecast data available.</p>
         @endif
 
-        <!-- Source Links  -->
+        <!-- Source Links -->
         <h5>Sources</h5>
         <ul class="list-unstyled">
             <li><a href="https://www.swpc.noaa.gov/" target="_blank">NOAA Space Weather Prediction Center</a> - Kp Index Forecast</li>
