@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Earthquake;
 use App\Models\AuroraForecast;
 use Carbon\Carbon;
@@ -202,7 +203,7 @@ class ResourcesController extends Controller
                     $auroraData = $this->getFallbackAuroraData();
                 } else {
                     $data = $response->json();
-                    \Log::debug('NOAA Kp API response', ['data' => array_slice($data, 0, 5)]); // Log first 5 entries
+                    \Log::debug('NOAA Kp API response', ['data' => array_slice($data, 0, 5)]);
                     $kp_forecast = array_slice($data, 1); // Skip header
                     $forecast = [];
                     $max_kp = 0;
@@ -211,7 +212,7 @@ class ResourcesController extends Controller
                         try {
                             $time = Carbon::parse($entry[0]);
                             $kp = (float) $entry[1];
-                            if ($time->gte(now()->startOfDay()) && $time->lte(now()->addDays(3))) { // Include today
+                            if ($time->gte(now()->startOfDay()) && $time->lte(now()->addDays(3))) {
                                 $forecast[] = [
                                     'time' => $time->toDateTimeString(),
                                     'kp' => $kp,
@@ -228,7 +229,7 @@ class ResourcesController extends Controller
 
                     // Store in database
                     if (!empty($forecast)) {
-                        AuroraForecast::truncate(); // Clear old data
+                        AuroraForecast::truncate();
                         foreach ($forecast as $item) {
                             AuroraForecast::create([
                                 'time' => $item['time'],
@@ -277,10 +278,9 @@ class ResourcesController extends Controller
 
     protected function getFallbackAuroraData()
     {
-        // Fallback data for June 1–3, 2025
         $startTime = now()->startOfDay();
         $forecast = [];
-        for ($i = 0; $i < 24; $i++) { // 3 days, 8 periods/day
+        for ($i = 0; $i < 24; $i++) {
             $time = $startTime->copy()->addHours($i * 3);
             $forecast[] = [
                 'time' => $time->toDateTimeString(),
@@ -294,5 +294,109 @@ class ResourcesController extends Controller
             'message' => 'Unable to fetch aurora forecast data. Displaying sample data.',
             'max_kp' => 3.0,
         ];
+    }
+
+    public function shipAis()
+    {
+        try {
+            $mapUrl = 'https://www.marinetraffic.com/en/ais/home/centerx:-5.3/centery:55.6/zoom:10';
+            \Log::info('Ship AIS map rendered', ['url' => $mapUrl]);
+            return view('resources.ship-ais', compact('mapUrl'));
+        } catch (\Exception $e) {
+            \Log::error('Ship AIS processing failed', ['error' => $e->getMessage()]);
+            $mapUrl = '';
+            return view('resources.ship-ais', compact('mapUrl'))->with('error', 'Unable to load ship AIS map.');
+        }
+    }
+
+    public function flightRadar()
+    {
+        try {
+            $mapUrl = 'https://www.flightradar24.com/55.6,-5.3/10';
+            \Log::info('FlightRadar map rendered', ['url' => $mapUrl]);
+            return view('resources.flight-radar', compact('mapUrl'));
+        } catch (\Exception $e) {
+            \Log::error('FlightRadar processing failed', ['error' => $e->getMessage()]);
+            $mapUrl = '';
+            return view('resources.flight-radar', compact('mapUrl'))->with('error', 'Unable to load flight radar map.');
+        }
+    }
+
+    public function lightning()
+    {
+        try {
+            $mapUrl = 'https://www.blitzortung.org/en/live_lightning_maps.php?map=10';
+            \Log::info('Lightning map rendered', ['url' => $mapUrl]);
+            return view('resources.lightning', compact('mapUrl'));
+        } catch (\Exception $e) {
+            \Log::error('Lightning processing failed', ['error' => $e->getMessage()]);
+            $mapUrl = '';
+            return view('resources.lightning', compact('mapUrl'))->with('error', 'Unable to load lightning map.');
+        }
+    }
+
+    public function tides()
+    {
+        try {
+            $locations = ['Lamlash', 'Brodick', 'Lochranza'];
+            $tideData = [];
+
+            // Sample data (replace with API if available)
+            foreach ($locations as $location) {
+                $tideData[$location] = [
+                    'date' => Carbon::today()->toDateString(),
+                    'high_tides' => [
+                        ['time' => '06:30', 'height' => '3.2m'],
+                        ['time' => '18:45', 'height' => '3.4m'],
+                    ],
+                    'low_tides' => [
+                        ['time' => '12:15', 'height' => '0.8m'],
+                        ['time' => '00:30', 'height' => '0.7m'],
+                    ],
+                ];
+            }
+
+            \Log::info('Tide data rendered', ['locations' => $locations]);
+            return view('resources.tides', compact('tideData', 'locations'));
+        } catch (\Exception $e) {
+            \Log::error('Tides processing failed', ['error' => $e->getMessage()]);
+            return view('resources.tides', ['locations' => [], 'tideData' => []])
+                ->with('error', 'Unable to load tide data.');
+        }
+    }
+
+    public function webcams()
+    {
+        try {
+            $webcams = [
+                [
+                    'title' => 'Brodick Ferry Terminal (CMAL)',
+                    'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
+                    'source' => 'Caledonian Maritime Assets Ltd',
+                ],
+                [
+                    'title' => 'Lochranza Ferry Terminal (CMAL)',
+                    'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
+                    'source' => 'Caledonian Maritime Assets Ltd',
+                ],
+                [
+                    'title' => 'Brodick Bay towards Goatfell',
+                    'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                    'source' => 'Cottages on Arran',
+                ],
+                [
+                    'title' => 'Brodick Ferry Port',
+                    'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                    'source' => 'Cottages on Arran',
+                ],
+            ];
+
+            \Log::info('Webcams rendered', ['count' => count($webcams)]);
+            return view('resources.webcams', compact('webcams'));
+        } catch (\Exception $e) {
+            \Log::error('Webcams processing failed', ['error' => $e->getMessage()]);
+            return view('resources.webcams', ['webcams' => []])
+                ->with('error', 'Unable to load webcam data.');
+        }
     }
 }
