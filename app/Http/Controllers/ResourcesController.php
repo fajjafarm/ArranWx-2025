@@ -359,18 +359,7 @@ class ResourcesController extends Controller
         ];
     }
 
-    public function shipAis()
-    {
-        try {
-            $mapUrl = 'https://www.marinetraffic.com/en/ais/home/centerx:-5.3/centery:55.6/zoom:10';
-            \Log::info('Ship AIS map rendered', ['url' => $mapUrl]);
-            return view('resources.ship-ais', compact('mapUrl'));
-        } catch (\Exception $e) {
-            \Log::error('Ship AIS processing failed', ['error' => $e->getMessage()]);
-            $mapUrl = '';
-            return view('resources.ship-ais', compact('mapUrl'))->with('error', 'Unable to load ship AIS map.');
-        }
-    }
+    
 
     public function flightRadar()
     {
