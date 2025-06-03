@@ -74,7 +74,7 @@ class ResourcesController extends Controller
         $vesselName = 'MV Alfred';
         return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
     }
-}
+
     public function earthquakes()
     {
         try {
