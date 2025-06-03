@@ -367,36 +367,47 @@ class ResourcesController extends Controller
 
     public function webcams()
     {
-        try {
-            $webcams = [
-                [
-                    'title' => 'Brodick Ferry Terminal (CMAL)',
-                    'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
-                    'source' => 'Caledonian Maritime Assets Ltd',
-                ],
-                [
-                    'title' => 'Lochranza Ferry Terminal (CMAL)',
-                    'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
-                    'source' => 'Caledonian Maritime Assets Ltd',
-                ],
-                [
-                    'title' => 'Brodick Bay towards Goatfell',
-                    'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
-                    'source' => 'Cottages on Arran',
-                ],
-                [
-                    'title' => 'Brodick Ferry Port',
-                    'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
-                    'source' => 'Cottages on Arran',
-                ],
-            ];
+        $webcams = [
+            [
+                'title' => 'Brodick Ferry Terminal (CMAL)',
+                'url' => 'https://player.twitch.tv/?channel=cmalbrodick&parent=' . request()->getHost(),
+                'source' => 'Caledonian Maritime Assets Ltd',
+                'type' => 'iframe',
+            ],
+            [
+                'title' => 'Lochranza Ferry Terminal (CMAL)',
+                'url' => 'https://player.twitch.tv/?channel=cmallochranza&parent=' . request()->getHost(),
+                'source' => 'Caledonian Maritime Assets Ltd',
+                'type' => 'iframe',
+            ],
+            [
+                'title' => 'A760 Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam1.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
+            ],
+            [
+                'title' => 'B880 String Road Cam',
+                'url' => 'https://alerts.live-website.com/roadcamimages/2382_cam2.jpg',
+                'source' => 'North Ayrshire Council',
+                'type' => 'image',
+            ],
+            [
+                'title' => 'Brodick Bay towards Goatfell',
+                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                'source' => 'Cottages on Arran',
+                'type' => 'link',
+            ],
+            [
+                'title' => 'Brodick Ferry Port',
+                'url' => 'https://www.cottagesonarran.co.uk/arran-webcam/',
+                'source' => 'Cottages on Arran',
+                'type' => 'link',
+            ],
+        ];
 
-            \Log::info('Webcams rendered', ['count' => count($webcams)]);
-            return view('resources.webcams', compact('webcams'));
-        } catch (\Exception $e) {
-            \Log::error('Webcams processing failed', ['error' => $e->getMessage()]);
-            return view('resources.webcams', ['webcams' => []])
-                ->with('error', 'Unable to load webcam data.');
-        }
+        $nacRoadCamsLink = 'https://www.north-ayrshire.gov.uk/roads-and-parking/road-cams';
+
+        return view('resources.webcams', compact('webcams', 'nacRoadCamsLink'));
     }
 }
