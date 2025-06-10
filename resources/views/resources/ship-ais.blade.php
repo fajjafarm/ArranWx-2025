@@ -1,7 +1,7 @@
 @extends('layouts.vertical', ['title' => 'Ship AIS Map'])
 
 @section('content')
-    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Ship AIS Map'])
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Ships near Arran'])
 
     <div class="container">
         <h4>Ships Near Arran</h4>
