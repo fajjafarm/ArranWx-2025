@@ -25,6 +25,7 @@ Route::get('/location/{name}', [WeatherController::class, 'show'])->name('locati
 Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/earthquakes-near-arran', [ResourcesController::class, 'earthquakes'])->name('earthquakes');
     Route::get('/ships-near-arran', [ResourcesController::class, 'shipAis'])->name('ship-ais');
+    Route::get('/ship-mv-caledonian-isles', [ResourcesController::class, 'shipCaledonianIsles'])->name('ship-caledonian-isles');
     Route::get('/ship-mv-catriona', [ResourcesController::class, 'shipCatriona'])->name('ship-catriona');
     Route::get('/ship-mv-glen-sannox', [ResourcesController::class, 'shipGlenSannox'])->name('ship-glen-sannox');
     Route::get('/ship-mv-alfred', [ResourcesController::class, 'shipAlfred'])->name('ship-alfred');

@@ -13,7 +13,8 @@ use SimpleXMLElement;
 class ResourcesController extends Controller
 {
     public function shipAis()
-    {
+{
+    try {
         $mapParams = [
             'width' => '100%',
             'height' => '600',
@@ -23,15 +24,47 @@ class ResourcesController extends Controller
             'names' => true,
         ];
         $vesselLinks = [
-            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona'],
-            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox'],
-            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred'],
+            ['name' => 'MV Caledonian Isles', 'route' => 'resources.ship-caledonian-isles', 'status' => 'In Greenock for repairs until June 13, 2025'],
+            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona', 'status' => 'Operating Lochranza-Claonaig'],
+            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox', 'status' => 'Operating Ardrossan-Brodick'],
+            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred', 'status' => 'Operating Troon-Brodick'],
         ];
-        return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
-    }
 
-    public function shipCatriona()
-    {
+        \Log::info('Ship AIS map rendered', ['vessel_count' => count($vesselLinks)]);
+        return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
+    } catch (\Exception $e) {
+        \Log::error('Ship AIS processing failed', ['error' => $e->getMessage()]);
+        return view('resources.ship-ais', ['mapParams' => [], 'vesselLinks' => []])
+            ->with('error', 'Unable to load ship AIS map.');
+    }
+}
+
+public function shipCaledonianIsles()
+{
+    try {
+        $mapParams = [
+            'width' => '100%',
+            'height' => '600',
+            'latitude' => 55.95, // Greenock
+            'longitude' => -4.76,
+            'zoom' => 11,
+            'mmsi' => '232002580',
+            'names' => true,
+        ];
+        $vesselName = 'MV Caledonian Isles';
+        $vesselStatus = 'In Greenock for repairs until June 13, 2025. Expected to resume Ardrossan-Brodick route.';
+        \Log::info('MV Caledonian Isles page rendered', ['mmsi' => $mapParams['mmsi']]);
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
+    } catch (\Exception $e) {
+        \Log::error('MV Caledonian Isles page failed', ['error' => $e->getMessage()]);
+        return view('resources.ship-vessel', ['mapParams' => [], 'vesselName' => 'MV Caledonian Isles'])
+            ->with('error', 'Unable to load vessel data.');
+    }
+}
+
+public function shipCatriona()
+{
+    try {
         $mapParams = [
             'width' => '100%',
             'height' => '600',
@@ -42,38 +75,61 @@ class ResourcesController extends Controller
             'names' => true,
         ];
         $vesselName = 'MV Catriona';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+        $vesselStatus = 'Operating Lochranza-Claonaig route.';
+        \Log::info('MV Catriona page rendered', ['mmsi' => $mapParams['mmsi']]);
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
+    } catch (\Exception $e) {
+        \Log::error('MV Catriona page failed', ['error' => $e->getMessage()]);
+        return view('resources.ship-vessel', ['mapParams' => [], 'vesselName' => 'MV Catriona'])
+            ->with('error', 'Unable to load vessel data.');
     }
+}
 
-    public function shipGlenSannox()
-    {
+public function shipGlenSannox()
+{
+    try {
         $mapParams = [
             'width' => '100%',
             'height' => '600',
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '232048757',
+            'mmsi' => '232050169',
             'names' => true,
         ];
         $vesselName = 'MV Glen Sannox';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+        $vesselStatus = 'Operating Ardrossan-Brodick route.';
+        \Log::info('MV Glen Sannox page rendered', ['mmsi' => $mapParams['mmsi']]);
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
+    } catch (\Exception $e) {
+        \Log::error('MV Glen Sannox page failed', ['error' => $e->getMessage()]);
+        return view('resources.ship-vessel', ['mapParams' => [], 'vesselName' => 'MV Glen Sannox'])
+            ->with('error', 'Unable to load vessel data.');
     }
+}
 
-    public function shipAlfred()
-    {
+public function shipAlfred()
+{
+    try {
         $mapParams = [
             'width' => '100%',
             'height' => '600',
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '232043477',
+            'mmsi' => '235071243',
             'names' => true,
         ];
         $vesselName = 'MV Alfred';
-        return view('resources.ship-vessel', compact('mapParams', 'vesselName'));
+        $vesselStatus = 'Operating Troon-Brodick route.';
+        \Log::info('MV Alfred page rendered', ['mmsi' => $mapParams['mmsi']]);
+        return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
+    } catch (\Exception $e) {
+        \Log::error('MV Alfred page failed', ['error' => $e->getMessage()]);
+        return view('resources.ship-vessel', ['mapParams' => [], 'vesselName' => 'MV Alfred'])
+            ->with('error', 'Unable to load vessel data.');
     }
+}
 
     public function earthquakes()
     {
