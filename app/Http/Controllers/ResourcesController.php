@@ -12,7 +12,7 @@ use SimpleXMLElement;
 
 class ResourcesController extends Controller
 {
-    public function shipAis()
+public function shipAis()
 {
     try {
         $mapParams = [
@@ -24,13 +24,13 @@ class ResourcesController extends Controller
             'names' => true,
         ];
         $vesselLinks = [
-            ['name' => 'MV Caledonian Isles', 'route' => 'resources.ship-caledonian-isles', 'status' => 'In Greenock for repairs until June 13, 2025'],
-            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona', 'status' => 'Operating Lochranza-Claonaig'],
-            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox', 'status' => 'Operating Ardrossan-Brodick'],
-            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred', 'status' => 'Operating Troon-Brodick'],
+            ['name' => 'MV Caledonian Isles', 'route' => 'resources.ship-caledonian-isles', 'status' => 'In Greenock for repairs until June 13, 2025', 'imo' => '9050567'],
+            ['name' => 'MV Catriona', 'route' => 'resources.ship-catriona', 'status' => 'Operating Lochranza-Claonaig', 'imo' => '9692325'],
+            ['name' => 'MV Glen Sannox', 'route' => 'resources.ship-glen-sannox', 'status' => 'Operating Ardrossan-Brodick', 'imo' => '9791199'],
+            ['name' => 'MV Alfred', 'route' => 'resources.ship-alfred', 'status' => 'Operating Troon-Brodick', 'imo' => '9370563'],
         ];
 
-        \Log::info('Ship AIS map rendered', ['vessel_count' => count($vesselLinks)]);
+        \Log::info('Ship AIS map rendered', ['vessel_count' => count($vesselLinks), 'vessels' => array_column($vesselLinks, 'name')]);
         return view('resources.ship-ais', compact('mapParams', 'vesselLinks'));
     } catch (\Exception $e) {
         \Log::error('Ship AIS processing failed', ['error' => $e->getMessage()]);
@@ -48,12 +48,13 @@ public function shipCaledonianIsles()
             'latitude' => 55.95, // Greenock
             'longitude' => -4.76,
             'zoom' => 11,
-            'mmsi' => '232002580',
             'names' => true,
+            'imo' => '9050567',
+            'show_track' => true,
         ];
         $vesselName = 'MV Caledonian Isles';
         $vesselStatus = 'In Greenock for repairs until June 13, 2025. Expected to resume Ardrossan-Brodick route.';
-        \Log::info('MV Caledonian Isles page rendered', ['mmsi' => $mapParams['mmsi']]);
+        \Log::info('MV Caledonian Isles page rendered', ['imo' => $mapParams['imo']]);
         return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
     } catch (\Exception $e) {
         \Log::error('MV Caledonian Isles page failed', ['error' => $e->getMessage()]);
@@ -71,12 +72,13 @@ public function shipCatriona()
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '235098028',
             'names' => true,
+            'imo' => '9692325',
+            'show_track' => true,
         ];
         $vesselName = 'MV Catriona';
         $vesselStatus = 'Operating Lochranza-Claonaig route.';
-        \Log::info('MV Catriona page rendered', ['mmsi' => $mapParams['mmsi']]);
+        \Log::info('MV Catriona page rendered', ['imo' => $mapParams['imo']]);
         return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
     } catch (\Exception $e) {
         \Log::error('MV Catriona page failed', ['error' => $e->getMessage()]);
@@ -94,12 +96,13 @@ public function shipGlenSannox()
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '232050169',
             'names' => true,
+            'imo' => '9791199',
+            'show_track' => true,
         ];
         $vesselName = 'MV Glen Sannox';
         $vesselStatus = 'Operating Ardrossan-Brodick route.';
-        \Log::info('MV Glen Sannox page rendered', ['mmsi' => $mapParams['mmsi']]);
+        \Log::info('MV Glen Sannox page rendered', ['imo' => $mapParams['imo']]);
         return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
     } catch (\Exception $e) {
         \Log::error('MV Glen Sannox page failed', ['error' => $e->getMessage()]);
@@ -117,12 +120,13 @@ public function shipAlfred()
             'latitude' => 55.6,
             'longitude' => -5.3,
             'zoom' => 11,
-            'mmsi' => '235071243',
             'names' => true,
+            'imo' => '9370563',
+            'show_track' => true,
         ];
         $vesselName = 'MV Alfred';
         $vesselStatus = 'Operating Troon-Brodick route.';
-        \Log::info('MV Alfred page rendered', ['mmsi' => $mapParams['mmsi']]);
+        \Log::info('MV Alfred page rendered', ['imo' => $mapParams['imo']]);
         return view('resources.ship-vessel', compact('mapParams', 'vesselName', 'vesselStatus'));
     } catch (\Exception $e) {
         \Log::error('MV Alfred page failed', ['error' => $e->getMessage()]);
