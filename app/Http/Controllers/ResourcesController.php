@@ -49,7 +49,7 @@ public function shipCaledonianIsles()
             'longitude' => -4.76,
             'zoom' => 11,
             'names' => true,
-            'imo' => '9050567',
+            'imo' => '9051284',
             'show_track' => true,
         ];
         $vesselName = 'MV Caledonian Isles';
@@ -73,7 +73,7 @@ public function shipCatriona()
             'longitude' => -5.3,
             'zoom' => 11,
             'names' => true,
-            'imo' => '9692325',
+            'imo' => '9759862',
             'show_track' => true,
         ];
         $vesselName = 'MV Catriona';
@@ -97,7 +97,7 @@ public function shipGlenSannox()
             'longitude' => -5.3,
             'zoom' => 11,
             'names' => true,
-            'imo' => '9791199',
+            'imo' => '9794513',
             'show_track' => true,
         ];
         $vesselName = 'MV Glen Sannox';
@@ -121,7 +121,7 @@ public function shipAlfred()
             'longitude' => -5.3,
             'zoom' => 11,
             'names' => true,
-            'imo' => '9370563',
+            'imo' => '9823467',
             'show_track' => true,
         ];
         $vesselName = 'MV Alfred';
