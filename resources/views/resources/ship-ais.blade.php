@@ -1,15 +1,15 @@
 @extends('layouts.vertical', ['title' => 'Ship AIS Map'])
 
 @section('content')
-    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Ships near Arran'])
+    @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => 'Ship AIS Map'])
 
     <div class="container">
-        <h4>Ships Near Arran</h4>
+        <h4 class="mb-2">Ships Near Arran</h4> <!-- Reduced margin -->
         @if (isset($error))
             <div class="alert alert-danger" role="alert">{{ $error }}</div>
         @endif
         @if (!empty($mapParams))
-            <div id="vesselfinder-map" style="width: {{ $mapParams['width'] }}; height: {{ $mapParams['height'] }}px;"></div>
+            <div id="vesselfinder-map" style="width: {{ $mapParams['width'] }}; height: {{ $mapParams['height'] }}px; margin-top: 0;"></div>
             <script type="text/javascript">
                 var width = "{{ $mapParams['width'] }}";
                 var height = "{{ $mapParams['height'] }}";
@@ -24,8 +24,8 @@
         @endif
 
         @if (!empty($vesselLinks))
-            <h5>Tracked Vessels</h5>
-            <ul class="list-group mt-3">
+            <h5 class="mt-3">Tracked Vessels</h5>
+            <ul class="list-group">
                 @foreach ($vesselLinks as $vessel)
                     <li class="list-group-item">
                         <a href="{{ route($vessel['route']) }}">{{ $vessel['name'] }}</a> (IMO: {{ $vessel['imo'] }})
@@ -35,9 +35,15 @@
             </ul>
         @endif
 
-        <h5>Sources</h5>
+        <h5 class="mt-3">Sources</h5>
         <ul class="list-unstyled">
             <li><a href="https://www.vesselfinder.com/" target="_blank">VesselFinder</a> - Real-time AIS ship tracking</li>
+            <li><a href="https://www.calmac.co.uk/" target="_blank">CalMac Ferries</a> - Ship details and schedules</li>
         </ul>
     </div>
+
+    <style>
+        #vesselfinder-map { margin-top: 0 !important; }
+        .page-title { margin-bottom: 0.5rem !important; } /* Adjust if page-title adds space */
+    </style>
 @endsection

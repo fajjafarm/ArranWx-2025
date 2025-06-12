@@ -4,12 +4,12 @@
     @include('layouts.partials.page-title', ['subtitle' => 'Resources', 'title' => $vesselName])
 
     <div class="container">
-        <h4>{{ $vesselName }} Tracking</h4>
+        <h4 class="mb-2">{{ $vesselName }} Tracking</h4> <!-- Reduced margin -->
         @if (isset($error))
             <div class="alert alert-danger" role="alert">{{ $error }}</div>
         @endif
         @if (!empty($mapParams))
-            <div id="vesselfinder-map" style="width: {{ $mapParams['width'] }}; height: {{ $mapParams['height'] }}px;"></div>
+            <div id="vesselfinder-map" style="width: {{ $mapParams['width'] }}; height: {{ $mapParams['height'] }}px; margin-top: 0;"></div>
             <script type="text/javascript">
                 var width = "{{ $mapParams['width'] }}";
                 var height = "{{ $mapParams['height'] }}";
@@ -28,9 +28,15 @@
             <p class="text-muted">Map unavailable.</p>
         @endif
 
-        <h5>Sources</h5>
+        <h5 class="mt-3">Sources</h5>
         <ul class="list-unstyled">
             <li><a href="https://www.vesselfinder.com/" target="_blank">VesselFinder</a> - Real-time AIS ship tracking</li>
+            <li><a href="https://www.calmac.co.uk/" target="_blank">CalMac Ferries</a> - Ship details and schedules</li>
         </ul>
     </div>
+
+    <style>
+        #vesselfinder-map { margin-top: 0 !important; }
+        .page-title { margin-bottom: 0.5rem !important; } /* Adjust if page-title adds space */
+    </style>
 @endsection
