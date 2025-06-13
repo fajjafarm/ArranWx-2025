@@ -29,14 +29,20 @@
                     @endforeach
                 </ul>
                 <ul class="sub-menu">
-                    @foreach ($locations[$type] as $location)
-                        <li class="side-nav-item">
-                            <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link">
-                                <span class="menu-text">{{ $location->name }}</span>
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
+    @if (isset($locations['marine']) && !empty($locations['marine']))
+        @foreach ($locations['marine'] as $location)
+            <li class="side-nav-item">
+                <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link">
+                    <span class="menu-text">{{ $location->name }}</span>
+                </a>
+            </li>
+        @endforeach
+    @else
+        <li class="side-nav-item">
+            <span class="menu-text text-muted">No Marine Locations Available</span>
+        </li>
+    @endif
+</ul>
             </div>
         </li>
     @endif
