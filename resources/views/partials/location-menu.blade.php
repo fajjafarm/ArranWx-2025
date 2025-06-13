@@ -28,6 +28,15 @@
                         </li>
                     @endforeach
                 </ul>
+                <ul class="sub-menu">
+                    @foreach ($locations[$type] as $location)
+                        <li class="side-nav-item">
+                            <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link">
+                                <span class="menu-text">{{ $location->name }}</span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         </li>
     @endif
