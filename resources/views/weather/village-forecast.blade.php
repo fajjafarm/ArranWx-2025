@@ -48,7 +48,7 @@
                                         <span>{{ $hour['time'] }}</span>
                                         <span>{{ $hour['temperature'] ?? 'N/A' }}°C</span>
                                         <span>{{ $hour['condition'] }}</span>
-                                        <span>Wind: {{ $hour['wind_speed'] }} mph {{ $hour['wind_direction'] }} (Gust {{ $hour->['wind_gust'] }} mph)</span>
+                                        <span>Wind: {{ $hour['wind_speed'] }} mph {{ $hour['wind_direction'] }} (Gust {{ $hour['wind_gust'] }} mph)</span>
                                         <span>Precip: {{ $hour['precipitation'] }} mm</span>
                                         <span>Pressure: {{ $hour['pressure'] ?? 'N/A' }} hPa</span>
                                     </div>
