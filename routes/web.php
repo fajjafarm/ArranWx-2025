@@ -20,10 +20,8 @@ use App\Http\Controllers\RoutingController;
 Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
 Route::get('/home', fn () => view('dashboards.index'))->name('home');
 Route::get('/warnings', [WeatherController::class, 'warnings'])->name('dashboard.warnings');
-Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show')
-    ->where('name', '[A-Za-z0-9\-]+');
-Route::get('/marine/{name}', [WeatherController::class, 'show'])->name('marine.show')
-    ->where('name', '[A-Za-z0-9\-]+');
+Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
+Route::get('/marine/{name}', [WeatherController::class, 'show'])->name('marine.show');
 
 Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/earthquakes-near-arran', [ResourcesController::class, 'earthquakes'])->name('earthquakes');
