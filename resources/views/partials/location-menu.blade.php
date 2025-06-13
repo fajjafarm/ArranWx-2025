@@ -36,11 +36,7 @@
                 </a>
             </li>
         @endforeach
-    @else
-        <li class="side-nav-item">
-            <span class="menu-text text-muted">No Marine Locations Available</span>
-        </li>
-    @endif
+
 </ul>
             </div>
         </li>
