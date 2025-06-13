@@ -29,8 +29,7 @@
                     @endforeach
                 </ul>
                 <ul class="sub-menu">
-    @if (isset($locations['marine']) && !empty($locations['marine']))
-        @foreach ($locations['marine'] as $location)
+            @foreach ($locations['marine'] as $location)
             <li class="side-nav-item">
                 <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link">
                     <span class="menu-text">{{ $location->name }}</span>
