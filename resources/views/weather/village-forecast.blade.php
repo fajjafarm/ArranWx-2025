@@ -8,6 +8,7 @@
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <style>
         .forecast-table {
             width: 100%;
@@ -95,6 +96,12 @@
             text-align: center;
             font-size: 12px;
         }
+        #leaflet-map {
+            height: 200px;
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
         @media (max-width: 768px) {
             .forecast-table {
                 display: block;
@@ -141,6 +148,9 @@
             .wind-dir-text {
                 font-size: 10px;
             }
+            #leaflet-map {
+                height: 150px;
+            }
         }
     </style>
 @endsection
@@ -151,13 +161,11 @@
     <div class="row">
         <div class="col">
             <div class="card">
-                <div class="card-body text-center">
-                    <!-- Header: Map, Title, Description -->
+                <div class="card-body">
+                    <!-- Header: Leaflet Map, Title, Description -->
                     <div class="row mb-4">
-                        <div class="col-md-3 text-center">
-                            <img src="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+ff0000({{ $location->longitude }},{{ $location->latitude }})/{{ $location->longitude }},{{ $location->latitude }},12,0/150x150?access_token={{ env('MAPBOX_ACCESS_TOKEN') }}"
-                                 alt="Map of {{ $location->name }}"
-                                 class="img-fluid rounded">
+                        <div class="col-md-3">
+                            <div id="leaflet-map"></div>
                         </div>
                         <div class="col-md-9 text-start">
                             <h2 class="card-title">{{ $location->name }} Weather Forecast</h2>
@@ -168,41 +176,54 @@
                     </div>
 
                     <!-- Current Conditions -->
-                    <h5 class="text-muted fs-13 text-uppercase">
-                        {{ $location->name }} ({{ $location->altitude ?? 0 }}m) - Current Conditions
-                    </h5>
-                    <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
-                        <div class="user-img fs-42 flex-shrink-0">
-                            <span class="avatar-title {{ $weatherData['type'] === 'Hill' ? 'text-bg-success' : 'text-bg-primary' }} rounded-circle fs-22">
-                                <iconify-icon icon="{{ $weatherData['type'] === 'Hill' ? 'solar:mountains-bold-duotone' : 'solar:buildings-bold-duotone' }}"></iconify-icon>
-                            </span>
+                    <div class="text-center">
+                        <h5 class="text-muted fs-13 text-uppercase">
+                            {{ $location->name }} ({{ $location->altitude ?? 0 }}m) - Current Conditions
+                        </h5>
+                        <div class="d-flex align-items-center justify-content-center gap-2 my-2 py-1">
+                            <div class="user-img fs-42 flex-shrink-0">
+                                <span class="avatar-title {{ $weatherData['type'] === 'Hill' ? 'text-bg-success' : 'text-bg-primary' }} rounded-circle fs-22">
+                                    <iconify-icon icon="{{ $weatherData['type'] === 'Hill' ? 'solar:mountains-bold-duotone' : 'solar:buildings-bold-duotone' }}"></iconify-icon>
+                                </span>
+                            </div>
+                            <h3 class="mb-0 fw-bold">
+                                @if (isset($weatherData['current']['air_temperature']))
+                                    {{ number_format($weatherData['current']['air_temperature'], 1) }}°C
+                                @else
+                                    N/A
+                                @endif
+                            </h3>
                         </div>
-                        <h3 class="mb-0 fw-bold">
-                            @if (isset($weatherData['current']['air_temperature']))
-                                {{ number_format($weatherData['current']['air_temperature'], 1) }}°C
-                            @else
-                                N/A
-                            @endif
-                        </h3>
+                        @if (isset($weatherData['current']))
+                            <p class="mb-1 text-muted">
+                                <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] ?? 'N/A' }} m/s</span>
+                                <span>Humidity: {{ $weatherData['current']['relative_humidity'] ?? 'N/A' }}%</span>
+                            </p>
+                        @endif
                     </div>
-                    @if (isset($weatherData['current']))
-                        <p class="mb-1 text-muted">
-                            <span class="me-2">Wind: {{ $weatherData['current']['wind_speed'] ?? 'N/A' }} m/s</span>
-                            <span>Humidity: {{ $weatherData['current']['relative_humidity'] ?? 'N/A' }}%</span>
-                        </p>
-                    @endif
 
-                    <!-- Temperature Chart -->
+                    <!-- Charts -->
                     @if (!empty($weatherData['hourly']))
-                        <h6 class="text-muted fs-14 mt-4">7-Day Temperature Forecast</h6>
-                        <canvas id="temperatureChart" style="max-height: 200px; margin: 20px auto;"></canvas>
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <h6 class="text-muted fs-14 text-center">7-Day Temperature Forecast</h6>
+                                <canvas id="temperatureChart" style="max-height: 200px; margin: 20px auto;"></canvas>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted fs-14 text-center">7-Day Rainfall Total</h6>
+                                <canvas id="rainfallChart" style="max-height: 200px; margin: 20px auto;"></canvas>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted fs-14 text-center">7-Day Peak Wind Gust</h6>
+                                <canvas id="windGustChart" style="max-height: 200px; margin: 20px auto;"></canvas>
+                            </div>
+                        </div>
                     @endif
 
                     <!-- Hourly Weather Forecast -->
                     @if (in_array($weatherData['type'], ['Village', 'Hill']) && !empty($weatherData['hourly']))
                         <h6 class="text-muted fs-14 mt-4">Hourly Weather Forecast (Every 2 Hours)</h6>
                         @php
-                            // Beaufort Scale
                             $beaufortRanges = [
                                 0 => ['max' => 0.5, 'desc' => 'Calm', 'color' => '#e6ffe6'],
                                 1 => ['max' => 1.5, 'desc' => 'Light Air', 'color' => '#ccffcc'],
@@ -219,7 +240,6 @@
                                 12 => ['max' => PHP_FLOAT_MAX, 'desc' => 'Hurricane Force', 'color' => '#800000']
                             ];
 
-                            // Temperature Scale
                             $tempRanges = [
                                 ['min' => -10, 'max' => -7, 'color' => '#00b7eb'],
                                 ['min' => -6.9, 'max' => -4, 'color' => '#33c4f0'],
@@ -238,7 +258,6 @@
                                 ['min' => 32.1, 'max' => PHP_FLOAT_MAX, 'color' => '#ff3333']
                             ];
 
-                            // Helper function to format time safely
                             function formatTime($value) {
                                 if ($value && $value !== 'N/A') {
                                     try {
@@ -350,7 +369,6 @@
                                             ];
                                             $iconClass = $iconMap[$condition] ?? 'wi-na';
 
-                                            // Wind Speed Color
                                             $windSpeed = $hour['wind_speed'] ?? 0;
                                             $windBeaufortLevel = 0;
                                             $windBeaufortDesc = 'N/A';
@@ -366,7 +384,6 @@
                                                 }
                                             }
 
-                                            // Wind Gust Color
                                             $windGust = $hour['wind_gust'] ?? 0;
                                             $gustBeaufortLevel = 0;
                                             $gustBeaufortDesc = 'N/A';
@@ -382,7 +399,6 @@
                                                 }
                                             }
 
-                                            // Temperature Color
                                             $temp = $hour['temperature'] ?? null;
                                             $tempColor = 'background: #e6ffe6;';
                                             if (is_numeric($temp)) {
@@ -394,7 +410,6 @@
                                                 }
                                             }
 
-                                            // Rainfall Color
                                             $rain = $hour['precipitation'] ?? 0;
                                             $rainColor = 'background: transparent;';
                                             if (is_numeric($rain)) {
@@ -405,7 +420,6 @@
                                                 else $rainColor = 'background: #0066cc;';
                                             }
 
-                                            // Pressure Color
                                             $pressure = $hour['pressure'] ?? null;
                                             $pressureColor = 'background: #e6ffe6;';
                                             if (is_numeric($pressure)) {
@@ -416,7 +430,6 @@
                                                 else $pressureColor = 'background: #66d1f5;';
                                             }
 
-                                            // Wind Direction Tail Length
                                             $tailLength = is_numeric($windSpeed) ? min($windSpeed * 2, 20) : 0;
                                             $mobileTailLength = is_numeric($windSpeed) ? min($windSpeed * 1.5, 12) : 0;
                                         @endphp
@@ -536,6 +549,7 @@
                             Debug: Current = {{ json_encode($weatherData['current'], JSON_PRETTY_PRINT) }}
                             Debug: Hourly = {{ json_encode($weatherData['hourly'], JSON_PRETTY_PRINT) }}
                             Debug: Sun/Moon = {{ json_encode($weatherData['sun'], JSON_PRETTY_PRINT) }}
+                            Debug: Locations = {{ json_encode($locations->toArray(), JSON_PRETTY_PRINT) }}
                         </pre>
                     @endif
 
@@ -550,11 +564,49 @@
     @vite(['resources/js/pages/dashboard-sales.js'])
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Leaflet Map
+            const map = L.map('leaflet-map').setView([{{ $location->latitude }}, {{ $location->longitude }}], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Current location pin
+            L.marker([{{ $location->latitude }}, {{ $location->longitude }}], {
+                icon: L.icon({
+                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34]
+                })
+            }).addTo(map)
+              .bindPopup('<b>{{ $location->name }}</b>')
+              .openPopup();
+
+            // Other locations pins
+            const locations = @json($locations);
+            locations.forEach(loc => {
+                if (loc.name !== '{{ $location->name }}') {
+                    const isMarine = loc.type === 'Marine';
+                    L.marker([loc.latitude, loc.longitude], {
+                        icon: L.icon({
+                            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34]
+                        })
+                    }).addTo(map)
+                      .bindPopup(`<b><a href="${isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}'.replace(':name', loc.name)}">${loc.name}</a></b>`);
+                }
+            });
+
+            // Charts
             @if (!empty($weatherData['hourly']))
-                const ctx = document.getElementById('temperatureChart').getContext('2d');
-                new Chart(ctx, {
+                // Temperature Chart
+                const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+                new Chart(tempCtx, {
                     type: 'line',
                     data: {
                         labels: [
@@ -579,25 +631,76 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Temperature (°C)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Date'
-                                }
-                            }
+                            y: { title: { display: true, text: 'Temperature (°C)' } },
+                            x: { title: { display: true, text: 'Date' } }
                         },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        }
+                        plugins: { legend: { display: true, position: 'top' } }
+                    }
+                });
+
+                // Rainfall Chart
+                const rainCtx = document.getElementById('rainfallChart').getContext('2d');
+                new Chart(rainCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [
+                            @foreach ($weatherData['hourly'] as $date => $hours)
+                                '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
+                            @endforeach
+                        ],
+                        datasets: [{
+                            label: 'Rainfall Total (mm)',
+                            data: [
+                                @foreach ($weatherData['hourly'] as $date => $hours)
+                                    {{ collect($hours)->sum('precipitation') }},
+                                @endforeach
+                            ],
+                            backgroundColor: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { title: { display: true, text: 'Rainfall (mm)' }, beginAtZero: true },
+                            x: { title: { display: true, text: 'Date' } }
+                        },
+                        plugins: { legend: { display: true, position: 'top' } }
+                    }
+                });
+
+                // Wind Gust Chart
+                const gustCtx = document.getElementById('windGustChart').getContext('2d');
+                new Chart(gustCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [
+                            @foreach ($weatherData['hourly'] as $date => $hours)
+                                '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
+                            @endforeach
+                        ],
+                        datasets: [{
+                            label: 'Peak Wind Gust (m/s)',
+                            data: [
+                                @foreach ($weatherData['hourly'] as $date => $hours)
+                                    {{ collect($hours)->max('wind_gust') ?? 'null' }},
+                                @endforeach
+                            ],
+                            backgroundColor: '#2ecc71',
+                            borderColor: '#27ae60',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { title: { display: true, text: 'Wind Gust (m/s)' }, beginAtZero: true },
+                            x: { title: { display: true, text: 'Date' } }
+                        },
+                        plugins: { legend: { display: true, position: 'top' } }
                     }
                 });
             @endif
