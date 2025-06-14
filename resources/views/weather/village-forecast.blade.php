@@ -544,28 +544,12 @@
                         <p class="text-muted mt-4">No hourly weather data available.</p>
                     @endif
 
-<!-- Update Debug Output -->
-@if (config('app.debug'))
-    <pre class="text-left text-xs bg-light p-3 mt-4">
-        Debug: Current = {{ json_encode($weatherData['current'], JSON_PRETTY_PRINT) }}
-        Debug: Hourly = {{ json_encode($weatherData['hourly'], JSON_PRETTY_PRINT) }}
-        Debug: Sun/Moon = {{ json_encode($weatherData['sun'], JSON_PRETTY_PRINT) }}
-        Debug: Locations = {{ json_encode($locations->map(function($loc) {
-            return [
-                'name' => $loc->name,
-                'latitude' => $loc->latitude,
-                'longitude' => $loc->longitude,
-                'type' => $loc->type
-            ];
-        })->toArray(), JSON_PRETTY_PRINT) }}
-        Debug: Chart Data = {{ json_encode([
-            'labels' => isset($chartLabels) ? $chartLabels : [],
-            'temp' => isset($tempData) ? $tempData : [],
-            'rain' => isset($rainData) ? $rainData : [],
-            'gust' => isset($gustData) ? $gustData : []
-        ], JSON_PRETTY_PRINT) }}
-    </pre>
-@endif
+                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light mt-3">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
 
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -630,28 +614,30 @@
                     $gustData = [];
                     if (!empty($weatherData['hourly']) && is_array($weatherData['hourly'])) {
                         foreach ($weatherData['hourly'] as $date => $hours) {
-                            if (!is_array($hours) || empty($hours)) {
+                            if (!is_array($hours) || empty($hours) || !isset($hours[0])) {
                                 \Illuminate\Support\Facades\Log::warning("Invalid hourly data for date {$date}", ['hours' => $hours]);
                                 continue;
                             }
                             try {
                                 $chartLabels[] = \Carbon\Carbon::parse($date)->format('M d');
                                 $tempData[] = isset($hours[0]['temperature']) && is_numeric($hours[0]['temperature']) ? (float) $hours[0]['temperature'] : null;
-                                $rainData[] = collect($hours)->sum(function ($hour) {
-                                    return isset($hour['precipitation']) && is_numeric($hour['precipitation']) ? (float) $hour['precipitation'] : 0;
-                                });
-                                $gustData[] = collect($hours)->max(function ($hour) {
-                                    return isset($hour['wind_gust']) && is_numeric($hour['wind_gust']) ? (float) $hour['wind_gust'] : null;
-                                }) ?? null;
+                                $rainData[] = collect($hours)->reduce(function ($sum, $hour) {
+                                    return $sum + (isset($hour['precipitation']) && is_numeric($hour['precipitation']) ? (float) $hour['precipitation'] : 0);
+                                }, 0);
+                                $gustData[] = collect($hours)->reduce(function ($max, $hour) {
+                                    $gust = isset($hour['wind_gust']) && is_numeric($hour['wind_gust']) ? (float) $hour['wind_gust'] : null;
+                                    return $gust !== null && ($max === null || $gust > $max) ? $gust : $max;
+                                }, null);
                             } catch (\Exception $e) {
                                 \Illuminate\Support\Facades\Log::error("Error processing hourly data for date {$date}", ['error' => $e->getMessage(), 'hours' => $hours]);
+                                continue;
                             }
                         }
                     } else {
                         \Illuminate\Support\Facades\Log::warning('Empty or invalid hourly weather data', ['hourly' => $weatherData['hourly'] ?? 'undefined']);
                     }
                 @endphp
-                @if (!empty($weatherData['hourly']))
+                @if (!empty($chartLabels))
                     console.log('Initializing charts');
                     try {
                         const chartLabels = @json($chartLabels, JSON_THROW_ON_ERROR);
@@ -664,7 +650,7 @@
                         console.log('Wind gust data:', gustData);
 
                         if (chartLabels.length === 0) {
-                            console.warn('No chart data available');
+                            console.warn('No valid chart data available');
                         } else {
                             const tempCtx = document.getElementById('temperatureChart').getContext('2d');
                             new Chart(tempCtx, {
@@ -742,6 +728,8 @@
                     } catch (e) {
                         console.error('Error parsing chart data:', e);
                     }
+                @else
+                    console.log('No chart data provided');
                 @endif
             } catch (e) {
                 console.error('Error initializing map or charts:', e);
