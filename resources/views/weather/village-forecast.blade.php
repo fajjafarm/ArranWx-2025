@@ -8,7 +8,6 @@
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" crossorigin="">
     <style>
         .forecast-table {
             width: 100%;
@@ -96,13 +95,6 @@
             text-align: center;
             font-size: 12px;
         }
-        #leaflet-map {
-            height: 200px;
-            width: 100%;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            z-index: 0;
-        }
         @media (max-width: 768px) {
             .forecast-table {
                 display: block;
@@ -149,9 +141,6 @@
             .wind-dir-text {
                 font-size: 10px;
             }
-            #leaflet-map {
-                height: 150px;
-            }
         }
     </style>
 @endsection
@@ -163,12 +152,9 @@
         <div class="col">
             <div class="card">
                 <div class="card-body">
-                    <!-- Header: Leaflet Map, Title, Description -->
+                    <!-- Header: Title, Description -->
                     <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div id="leaflet-map"></div>
-                        </div>
-                        <div class="col-md-9 text-start">
+                        <div class="col text-start">
                             <h2 class="card-title">{{ $location->name }} Weather Forecast</h2>
                             <p class="text-muted">
                                 {{ $location->description ?? 'Weather forecast for ' . $location->name . ', located at latitude ' . $location->latitude . ', longitude ' . $location->longitude . ', altitude ' . ($location->altitude ?? 0) . ' meters above sea level.' }}
@@ -554,58 +540,9 @@
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             try {
-                // Leaflet Map
-                console.log('Initializing Leaflet map');
-                const map = L.map('leaflet-map').setView([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], 10);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-
-                map.invalidateSize();
-
-                L.marker([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], {
-                    icon: L.icon({
-                        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34]
-                    })
-                }).addTo(map)
-                  .bindPopup('<b>{{ addslashes($location->name) }}</b>')
-                  .openPopup();
-
-                const locations = @json($locations->filter(function($loc) {
-                    return is_numeric($loc->latitude) && is_numeric($loc->longitude);
-                })->map(function($loc) {
-                    return [
-                        'name' => $loc->name,
-                        'latitude' => (float) $loc->latitude,
-                        'longitude' => (float) $loc->longitude,
-                        'type' => $loc->type
-                    ];
-                })->values()->toArray());
-                console.log('Locations data:', locations);
-                locations.forEach(loc => {
-                    if (loc.name !== '{{ addslashes($location->name) }}') {
-                        const isMarine = loc.type === 'Marine';
-                        const url = isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}';
-                        const safeName = encodeURIComponent(loc.name);
-                        L.marker([loc.latitude, loc.longitude], {
-                            icon: L.icon({
-                                iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
-                                iconSize: [25, 41],
-                                iconAnchor: [12, 41],
-                                popupAnchor: [1, -34]
-                            })
-                        }).addTo(map)
-                          .bindPopup(`<b><a href="${url.replace(':name', safeName)}">${loc.name}</a></b>`);
-                    }
-                });
-
                 // Charts
                 @php
                     $chartLabels = [];
@@ -614,7 +551,7 @@
                     $gustData = [];
                     if (!empty($weatherData['hourly']) && is_array($weatherData['hourly'])) {
                         foreach ($weatherData['hourly'] as $date => $hours) {
-                            if (!is_array($hours) || empty($hours) || !isset($hours[0])) {
+                            if (!is_array($hours) || empty($hours) || !isset($hours[0]) || !is_array($hours[0])) {
                                 \Illuminate\Support\Facades\Log::warning("Invalid hourly data for date {$date}", ['hours' => $hours]);
                                 continue;
                             }
@@ -732,7 +669,7 @@
                     console.log('No chart data provided');
                 @endif
             } catch (e) {
-                console.error('Error initializing map or charts:', e);
+                console.error('Error initializing charts:', e);
             }
         });
     </script>
