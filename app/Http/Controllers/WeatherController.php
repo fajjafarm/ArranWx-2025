@@ -137,145 +137,147 @@ class WeatherController extends Controller
             'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
     }
 
-    public function show(Request $request, $name)
-    {
-        $location = Location::where('name', $name)->firstOrFail();
+public function show(Request $request, $name)
+{
+    $location = Location::where('name', $name)->firstOrFail();
 
-        // Validate location type against route prefix
-        $routeName = $request->route()->getName();
-        $expectedType = $routeName === 'location.show' ? ['Village', 'Hill'] : ['Marine'];
-        
-        if (!in_array($location->type, $expectedType)) {
-            abort(404, 'Location type does not match the requested forecast type.');
-        }
+    // Validate location type against route prefix
+    $routeName = $request->route()->getName();
+    $expectedType = $routeName === 'location.show' ? ['Village', 'Hill'] : ['Marine'];
+    
+    if (!in_array($location->type, $expectedType)) {
+        abort(404, 'Location type does not match the requested forecast type.');
+    }
 
-        Log::info("Fetching weather data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
-        $weather = Cache::remember("weather_{$location->latitude}_{$location->longitude}", now()->addHours(1), fn() => $this->weatherService->getWeather($location->latitude, $location->longitude));
-        Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
+    Log::info("Fetching weather data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
+    $weather = Cache::remember("weather_{$location->latitude}_{$location->longitude}", now()->addHours(1), fn() => $this->weatherService->getWeather($location->latitude, $location->longitude));
+    Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
 
-        if (!isset($weather['properties']) || !isset($weather['properties']['timeseries']) || empty($weather['properties']['timeseries'])) {
-            Log::warning("No valid timeseries data returned for {$location->name}", ['response' => $weather]);
-            $currentWeather = [];
-            $hourlyData = [];
-        } else {
-            $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
-                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
-                : [];
+    if (!isset($weather['properties']) || !isset($weather['properties']['timeseries']) || empty($weather['properties']['timeseries'])) {
+        Log::warning("No valid timeseries data returned for {$location->name}", ['response' => $weather]);
+        $currentWeather = [];
+        $hourlyData = [];
+    } else {
+        $currentWeather = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+            ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+            : [];
 
-            Log::info("Processing 2-hourly data for {$location->name}");
-            $hourlyData = [];
-            $timeseries = $weather['properties']['timeseries'];
-            $previousPressure = null;
+        Log::info("Processing 2-hourly data for {$location->name}");
+        $hourlyData = [];
+        $timeseries = $weather['properties']['timeseries'];
+        $previousPressure = null;
 
-            // Map symbol codes to template-compatible conditions
-            $conditionsMap = [
-                'clearsky' => 'clearsky_day',
-                'fair' => 'fair_day',
-                'partlycloudy' => 'partlycloudy_day',
-                'cloudy' => 'cloudy',
-                'fog' => 'fog',
-                'lightrain' => 'lightrain',
-                'rain' => 'rain',
-                'heavyrain' => 'heavyrain',
-                'lightrainshowers' => 'lightrainshowers_day',
-                'rainshowers' => 'rainshowers_day',
-                'heavyrainshowers' => 'heavyrainshowers_day',
-                'lightsnow' => 'lightsnow',
-                'snow' => 'snow',
-                'heavysnow' => 'heavysnow',
-                'lightsnowshowers' => 'lightsnowshowers_day',
-                'snowshowers' => 'snowshowers_day',
-                'heavysnowshowers' => 'heavysnowshowers_day',
-                'sleet' => 'sleet',
-                'lightsleet' => 'sleet',
-                'heavysleet' => 'sleet',
-                'thunder' => 'thunder',
-                'rainandthunder' => 'rainandthunder',
-                'snowandthunder' => 'snowandthunder'
-            ];
+        $conditionsMap = [
+            'clearsky' => 'clearsky_day',
+            'fair' => 'fair_day',
+            'partlycloudy' => 'partlycloudy_day',
+            'cloudy' => 'cloudy',
+            'fog' => 'fog',
+            'lightrain' => 'lightrain',
+            'rain' => 'rain',
+            'heavyrain' => 'heavyrain',
+            'lightrainshowers' => 'lightrainshowers_day',
+            'rainshowers' => 'rainshowers_day',
+            'heavyrainshowers' => 'heavyrainshowers_day',
+            'lightsnow' => 'lightsnow',
+            'snow' => 'snow',
+            'heavysnow' => 'heavysnow',
+            'lightsnowshowers' => 'lightsnowshowers_day',
+            'snowshowers' => 'snowshowers_day',
+            'heavysnowshowers' => 'heavysnowshowers_day',
+            'sleet' => 'sleet',
+            'lightsleet' => 'sleet',
+            'heavysleet' => 'sleet',
+            'thunder' => 'thunder',
+            'rainandthunder' => 'rainandthunder',
+            'snowandthunder' => 'snowandthunder'
+        ];
 
-            foreach ($timeseries as $entry) {
-                $time = Carbon::parse($entry['time'])->setTimezone('Europe/London');
-                if ($time->minute === 0 && $time->hour % 2 === 0) {
-                    $date = $time->toDateString();
-                    $details = $entry['data']['instant']['details'] ?? [];
-                    $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
-                    if ($next1Hour['summary']['symbol_code'] === 'N/A') {
-                        $next1Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
-                    }
+        foreach ($timeseries as $entry) {
+            $time = Carbon::parse($entry['time'])->setTimezone('Europe/London');
+            if ($time->minute === 0 && $time->hour % 2 === 0) {
+                $date = $time->toDateString();
+                $details = $entry['data']['instant']['details'] ?? [];
+                $next1Hour = $entry['data']['next_1_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                if ($next1Hour['summary']['symbol_code'] === 'N/A') {
+                    $next1Hour = $entry['data']['next_6_hours'] ?? ['summary' => ['symbol_code' => 'N/A'], 'details' => ['precipitation_amount' => 0]];
+                }
 
-                    $windSpeed = $details['wind_speed'] ?? 0;
-                    $cloudCover = $details['cloud_area_fraction'] ?? 0;
-                    $pressure = $details['air_pressure_at_sea_level'] ?? null;
-                    $altitude = $location->altitude ?? 0;
+                $windSpeed = $details['wind_speed'] ?? 0;
+                $cloudCover = $details['cloud_area_fraction'] ?? 0;
+                $pressure = $details['air_pressure_at_sea_level'] ?? null;
+                $altitude = $location->altitude ?? 0;
 
-                    $gustFactor = $location->type === 'Hill' ? 1.6 : 1.5;
-                    if ($cloudCover > 75) {
+                $gustFactor = $location->type === 'Hill' ? 1.6 : 1.5;
+                if ($cloudCover > 75) {
+                    $gustFactor += 0.2;
+                } elseif ($cloudCover < 25) {
+                    $gustFactor -= 0.1;
+                }
+                if ($previousPressure !== null && $pressure !== null) {
+                    $pressureChange = $previousPressure - $pressure;
+                    if ($pressureChange > 1) {
                         $gustFactor += 0.2;
-                    } elseif ($cloudCover < 25) {
+                    } elseif ($pressureChange < -1) {
                         $gustFactor -= 0.1;
                     }
-                    if ($previousPressure !== null && $pressure !== null) {
-                        $pressureChange = $previousPressure - $pressure;
-                        if ($pressureChange > 1) {
-                            $gustFactor += 0.2;
-                        } elseif ($pressureChange < -1) {
-                            $gustFactor -= 0.1;
-                        }
-                    }
-                    $previousPressure = $pressure;
-                    $altitudeMultiplier = $location->type === 'Hill' ? (1 + ($altitude / 100) * 0.015) : 1;
-                    $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor * $altitudeMultiplier);
-
-                    $symbolCode = $next1Hour['summary']['symbol_code'] ?? 'N/A';
-                    $condition = $conditionsMap[str_replace(['_day', '_night'], '', $symbolCode)] ?? 'unknown';
-                    if ($time->hour >= 20 || $time->hour <= 1) {
-                        $condition = str_replace('_day', '_night', $condition);
-                    }
-
-                    $hourlyData[$date][] = [
-                        'time' => $time->format('H:i'),
-                        'temperature' => $details['air_temperature'] ?? null,
-                        'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
-                        'condition' => $condition,
-                        'wind_speed' => $windSpeed,
-                        'wind_gust' => round($windGust, 1),
-                        'wind_direction' => $this->degreesToCardinal($details['wind_from_direction'] ?? null),
-                        'wind_from_direction_degrees' => $details['wind_from_direction'] ?? null,
-                        'pressure' => $pressure,
-                    ];
-                    Log::info("Hourly data entry for {$location->name}", ['entry' => $hourlyData[$date][count($hourlyData[$date]) - 1]]);
                 }
-            }
-            $hourlyData = array_slice($hourlyData, 0, 7, true); // Limit to 7 days
-            Log::info("Processed 2-hourly data for {$location->name}", ['hourly' => $hourlyData]);
-        }
+                $previousPressure = $pressure;
+                $altitudeMultiplier = $location->type === 'Hill' ? (1 + ($altitude / 100) * 0.015) : 1;
+                $windGust = $details['wind_speed_of_gust'] ?? ($windSpeed * $gustFactor * $altitudeMultiplier);
 
-        Log::info("Fetching sun and moon data for {$location->name}");
-        $sunMoonData = [];
-        for ($i = 0; $i < 7; $i++) {
-            $date = Carbon::today()->addDays($i)->toDateString();
-            $sunMoon = Cache::remember("sun_moon_{$location->latitude}_{$location->longitude}_{$date}", now()->addDays(1), fn() => $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date));
-            $moonPhase = isset($sunMoon['moonphase']) && is_numeric($sunMoon['moonphase']) ? $sunMoon['moonphase'] : null;
-            if ($moonPhase !== null && $moonPhase > 1) {
-                $moonPhase = $moonPhase / 360; // Normalize to 0–1 if in degrees
-            }
-            $sunMoonData[$date] = [
-                'sunrise' => $sunMoon['sunrise'] ?? 'N/A',
-                'sunset' => $sunMoon['sunset'] ?? 'N/A',
-                'moonrise' => $sunMoon['moonrise'] ?? 'N/A',
-                'moonset' => $sunMoon['moonset'] ?? 'N/A',
-                'moonphase' => $moonPhase
-            ];
-        }
-        Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
+                $symbolCode = $next1Hour['summary']['symbol_code'] ?? 'N/A';
+                $condition = $conditionsMap[str_replace(['_day', '_night'], '', $symbolCode)] ?? 'unknown';
+                if ($time->hour >= 20 || $time->hour <= 1) {
+                    $condition = str_replace('_day', '_night', $condition);
+                }
 
-        $marine = null;
-        $marineForecast = [];
-        $marineHourly = [];
-        $marineApiUrl = null;
-        $dailyMarineData = [];
-        if ($location->type === 'Marine') {
+                $hourlyData[$date][] = [
+                    'time' => $time->format('H:i'),
+                    'temperature' => $details['air_temperature'] ?? null,
+                    'precipitation' => $next1Hour['details']['precipitation_amount'] ?? 0,
+                    'condition' => $condition,
+                    'wind_speed' => $windSpeed,
+                    'wind_gust' => round($windGust, 1),
+                    'wind_direction' => $this->degreesToCardinal($details['wind_from_direction'] ?? null),
+                    'wind_from_direction_degrees' => $details['wind_from_direction'] ?? null,
+                    'pressure' => $pressure,
+                ];
+                Log::info("Hourly data entry for {$location->name}", ['entry' => $hourlyData[$date][count($hourlyData[$date]) - 1]]);
+            }
+        }
+        $hourlyData = array_slice($hourlyData, 0, 7, true);
+        Log::info("Processed 2-hourly data for {$location->name}", ['hourly' => $hourlyData]);
+    }
+
+    Log::info("Fetching sun and moon data for {$location->name}");
+    $sunMoonData = [];
+    for ($i = 0; $i < 7; $i++) {
+        $date = Carbon::today()->addDays($i)->toDateString();
+        $sunMoon = Cache::remember("sun_moon_{$location->latitude}_{$location->longitude}_{$date}", now()->addDays(1), fn() => $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date));
+        $moonPhase = isset($sunMoon['moonphase']) && is_numeric($sunMoon['moonphase']) ? $sunMoon['moonphase'] : null;
+        if ($moonPhase !== null && $moonPhase > 1) {
+            $moonPhase = $moonPhase / 360;
+        }
+        $sunMoonData[$date] = [
+            'sunrise' => isset($sunMoon['sunrise']) && $sunMoon['sunrise'] !== 'N/A' ? $sunMoon['sunrise'] : null,
+            'sunset' => isset($sunMoon['sunset']) && $sunMoon['sunset'] !== 'N/A' ? $sunMoon['sunset'] : null,
+            'moonrise' => isset($sunMoon['moonrise']) && $sunMoon['moonrise'] !== 'N/A' ? $sunMoon['moonrise'] : null,
+            'moonset' => isset($sunMoon['moonset']) && $sunMoon['moonset'] !== 'N/A' ? $sunMoon['moonset'] : null,
+            'moonphase' => $moonPhase
+        ];
+        if (in_array(null, [$sunMoonData[$date]['sunrise'], $sunMoonData[$date]['sunset'], $sunMoonData[$date]['moonrise'], $sunMoonData[$date]['moonset']], true)) {
+            Log::warning("Missing or invalid sun/moon data for {$location->name} on {$date}", ['sun_moon' => $sunMoon]);
+        }
+    }
+    Log::info("Sun and moon data for {$location->name}", ['sun_moon' => $sunMoonData]);
+
+    $marine = null;
+    $marineForecast = [];
+    $marineHourly = [];
+    $marineApiUrl = null;
+    $dailyMarineData = [];
+    if ($location->type === 'Marine') {
             Log::info("Fetching marine data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
             try {
                 $currentDate = Carbon::now('Europe/London');
@@ -369,32 +371,33 @@ class WeatherController extends Controller
             }
         }
 
-        $weatherData = [
-            'current' => $currentWeather,
-            'hourly' => $hourlyData,
-            'sun' => $sunMoonData,
-            'marine' => $marine,
-            'marine_forecast' => $marineForecast,
-            'marine_hourly' => $marineHourly,
-            'daily_marine_data' => $dailyMarineData,
-            'type' => $location->type,
-            'altitude' => $location->altitude ?? 0,
-            'marine_api_url' => $marineApiUrl
-        ];
+       $weatherData = [
+        'current' => $currentWeather,
+        'hourly' => $hourlyData,
+        'sun' => $sunMoonData,
+        'marine' => $marine,
+        'marine_forecast' => $marineForecast,
+        'marine_hourly' => $marineHourly,
+        'daily_marine_data' => $dailyMarineData,
+        'type' => $location->type,
+        'altitude' => $location->altitude ?? 0,
+        'marine_api_url' => $marineApiUrl
+    ];
 
-        Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
+    $locations = Cache::remember('locations', now()->addHours(24), fn() => Location::all()); // Add all locations for map
 
-        // Select view based on location type
-        $view = match ($location->type) {
-            'Village', 'Hill' => 'weather.village-forecast',
-            'Marine' => 'weather.marine-forecast',
-            default => throw new \Exception("Invalid location type: {$location->type}")
-        };
+    Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
 
-        return view($view, [
-            'location' => $location,
-            'weatherData' => $weatherData,
-            'controller' => $this
-        ]);
-    }
+    $view = match ($location->type) {
+        'Village', 'Hill' => 'weather.village-forecast',
+        'Marine' => 'weather.marine-forecast',
+        default => throw new \Exception("Invalid location type: {$location->type}")
+    };
+
+    return view($view, [
+        'location' => $location,
+        'weatherData' => $weatherData,
+        'locations' => $locations, // Pass locations for Leaflet map
+        'controller' => $this
+    ]);
 }
