@@ -400,4 +400,4 @@ public function show(Request $request, $name)
         'locations' => $locations, // Pass locations for Leaflet map
         'controller' => $this
     ]);
-}
+}}
