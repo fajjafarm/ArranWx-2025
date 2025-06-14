@@ -8,7 +8,7 @@
     @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" crossorigin="">
     <style>
         .forecast-table {
             width: 100%;
@@ -550,7 +550,14 @@
                             Debug: Current = {{ json_encode($weatherData['current'], JSON_PRETTY_PRINT) }}
                             Debug: Hourly = {{ json_encode($weatherData['hourly'], JSON_PRETTY_PRINT) }}
                             Debug: Sun/Moon = {{ json_encode($weatherData['sun'], JSON_PRETTY_PRINT) }}
-                            Debug: Locations = {{ json_encode($locations->toArray(), JSON_PRETTY_PRINT) }}
+                            Debug: Locations = {{ json_encode($locations->map(function($loc) {
+                                return [
+                                    'name' => $loc->name,
+                                    'latitude' => $loc->latitude,
+                                    'longitude' => $loc->longitude,
+                                    'type' => $loc->type
+                                ];
+                            })->toArray(), JSON_PRETTY_PRINT) }}
                         </pre>
                     @endif
 
@@ -564,11 +571,12 @@
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             try {
                 // Leaflet Map
+                console.log('Initializing Leaflet map');
                 const map = L.map('leaflet-map').setView([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], 10);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -587,16 +595,19 @@
                   .bindPopup('<b>{{ addslashes($location->name) }}</b>')
                   .openPopup();
 
-                const locations = @json($locations->map(function($loc) {
+                const locations = @json($locations->filter(function($loc) {
+                    return is_numeric($loc->latitude) && is_numeric($loc->longitude);
+                })->map(function($loc) {
                     return [
                         'name' => $loc->name,
-                        'latitude' => is_numeric($loc->latitude) ? $loc->latitude : null,
-                        'longitude' => is_numeric($loc->longitude) ? $loc->longitude : null,
+                        'latitude' => (float) $loc->latitude,
+                        'longitude' => (float) $loc->longitude,
                         'type' => $loc->type
                     ];
-                })->toArray());
+                })->values()->toArray());
+                console.log('Locations data:', locations);
                 locations.forEach(loc => {
-                    if (loc.name !== '{{ addslashes($location->name) }}' && loc.latitude && loc.longitude && !isNaN(loc.latitude) && !isNaN(loc.longitude)) {
+                    if (loc.name !== '{{ addslashes($location->name) }}') {
                         const isMarine = loc.type === 'Marine';
                         const url = isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}';
                         const safeName = encodeURIComponent(loc.name);
@@ -614,22 +625,35 @@
 
                 // Charts
                 @if (!empty($weatherData['hourly']))
+                    console.log('Initializing charts');
+                    const chartLabels = [@foreach ($weatherData['hourly'] as $date => $hours)
+                        '{{ \Carbon\Carbon::parse($date)->format('M d') }}'@if (!$loop->last),@endif
+                    @endforeach];
+                    console.log('Chart labels:', chartLabels);
+
+                    const tempData = [@foreach ($weatherData['hourly'] as $date => $hours)
+                        {{ $hours[0]['temperature'] ?? 'null' }}@if (!$loop->last),@endif
+                    @endforeach];
+                    console.log('Temperature data:', tempData);
+
+                    const rainData = [@foreach ($weatherData['hourly'] as $date => $hours)
+                        {{ collect($hours)->sum('precipitation') }}@if (!$loop->last),@endif
+                    @endforeach];
+                    console.log('Rainfall data:', rainData);
+
+                    const gustData = [@foreach ($weatherData['hourly'] as $date => $hours)
+                        {{ collect($hours)->max('wind_gust') ?? 'null' }}@if (!$loop->last),@endif
+                    @endforeach];
+                    console.log('Wind gust data:', gustData);
+
                     const tempCtx = document.getElementById('temperatureChart').getContext('2d');
                     new Chart(tempCtx, {
                         type: 'line',
                         data: {
-                            labels: [
-                                @foreach ($weatherData['hourly'] as $date => $hours)
-                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                                @endforeach
-                            ],
+                            labels: chartLabels,
                             datasets: [{
                                 label: 'Temperature (°C)',
-                                data: [
-                                    @foreach ($weatherData['hourly'] as $date => $hours)
-                                        {{ $hours[0]['temperature'] ?? 'null' }},
-                                    @endforeach
-                                ],
+                                data: tempData,
                                 borderColor: '#e74c3c',
                                 backgroundColor: 'rgba(231, 76, 60, 0.2)',
                                 fill: true,
@@ -651,18 +675,10 @@
                     new Chart(rainCtx, {
                         type: 'bar',
                         data: {
-                            labels: [
-                                @foreach ($weatherData['hourly'] as $date => $hours)
-                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                                @endforeach
-                            ],
+                            labels: chartLabels,
                             datasets: [{
                                 label: 'Rainfall Total (mm)',
-                                data: [
-                                    @foreach ($weatherData['hourly'] as $date => $hours)
-                                        {{ collect($hours)->sum('precipitation') }},
-                                    @endforeach
-                                ],
+                                data: rainData,
                                 backgroundColor: '#3498db',
                                 borderColor: '#2980b9',
                                 borderWidth: 1
@@ -683,18 +699,10 @@
                     new Chart(gustCtx, {
                         type: 'bar',
                         data: {
-                            labels: [
-                                @foreach ($weatherData['hourly'] as $date => $hours)
-                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                                @endforeach
-                            ],
+                            labels: chartLabels,
                             datasets: [{
                                 label: 'Peak Wind Gust (m/s)',
-                                data: [
-                                    @foreach ($weatherData['hourly'] as $date => $hours)
-                                        {{ collect($hours)->max('wind_gust') ?? 'null' }},
-                                    @endforeach
-                                ],
+                                data: gustData,
                                 backgroundColor: '#2ecc71',
                                 borderColor: '#27ae60',
                                 borderWidth: 1
