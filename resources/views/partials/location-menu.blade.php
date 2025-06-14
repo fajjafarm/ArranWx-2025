@@ -29,23 +29,15 @@
                     @endforeach
                 </ul>
 <ul class="sub-menu">
-    @php
-        // Filter locations to include only those with type 'marine'
-        $marineLocations = $locations->filter(fn($location) => $location->type === 'marine');
-    @endphp
-    @if ($marineLocations->isNotEmpty())
-        @foreach ($marineLocations as $location)
+
             <li class="side-nav-item">
                 <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link{{ request()->routeIs('marine.show') && request()->route('name') === $location->name ? ' active' : '' }}">
                     <span class="menu-text">{{ $location->name }}</span>
                 </a>
             </li>
-        @endforeach
-    @else
-        <li class="side-nav-item">
-            <span class="menu-text text-muted">No Marine Locations Available</span>
-        </li>
-    @endif
+
+
+   
 </ul>
             </div>
         </li>
