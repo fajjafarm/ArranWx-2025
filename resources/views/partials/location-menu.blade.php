@@ -28,17 +28,7 @@
                         </li>
                     @endforeach
                 </ul>
-<ul class="sub-menu">
 
-            <li class="side-nav-item">
-                <a href="{{ route('marine.show', $location->name) }}" class="side-nav-link{{ request()->routeIs('marine.show') && request()->route('name') === $location->name ? ' active' : '' }}">
-                    <span class="menu-text">{{ $location->name }}</span>
-                </a>
-            </li>
-
-
-   
-</ul>
             </div>
         </li>
     @endif
