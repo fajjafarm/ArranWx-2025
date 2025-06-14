@@ -237,14 +237,26 @@
                                 ['min' => 29.1, 'max' => 32, 'color' => '#ff6666'],
                                 ['min' => 32.1, 'max' => PHP_FLOAT_MAX, 'color' => '#ff3333']
                             ];
+
+                            // Helper function to format time safely
+                            function formatTime($value) {
+                                if ($value && $value !== 'N/A') {
+                                    try {
+                                        return \Carbon\Carbon::parse($value)->format('H:i');
+                                    } catch (\Exception $e) {
+                                        return 'N/A';
+                                    }
+                                }
+                                return 'N/A';
+                            }
                         @endphp
                         @foreach ($weatherData['hourly'] as $date => $hours)
                             <div class="day-header">
                                 {{ \Carbon\Carbon::parse($date)->format('l, M d') }}
-                                <span><i class="wi wi-sunrise sun-moon-icon"></i> {{ isset($weatherData['sun'][$date]['sunrise']) ? \Carbon\Carbon::parse($weatherData['sun'][$date]['sunrise'])->format('H:i') : 'N/A' }}</span>
-                                <span><i class="wi wi-sunset sun-moon-icon"></i> {{ isset($weatherData['sun'][$date]['sunset']) ? \Carbon\Carbon::parse($weatherData['sun'][$date]['sunset'])->format('H:i') : 'N/A' }}</span>
-                                <span><i class="wi wi-moonrise sun-moon-icon"></i> {{ isset($weatherData['sun'][$date]['moonrise']) ? \Carbon\Carbon::parse($weatherData['sun'][$date]['moonrise'])->format('H:i') : 'N/A' }}</span>
-                                <span><i class="wi wi-moonset sun-moon-icon"></i> {{ isset($weatherData['sun'][$date]['moonset']) ? \Carbon\Carbon::parse($weatherData['sun'][$date]['moonset'])->format('H:i') : 'N/A' }}</span>
+                                <span><i class="wi wi-sunrise sun-moon-icon"></i> {{ formatTime($weatherData['sun'][$date]['sunrise'] ?? 'N/A') }}</span>
+                                <span><i class="wi wi-sunset sun-moon-icon"></i> {{ formatTime($weatherData['sun'][$date]['sunset'] ?? 'N/A') }}</span>
+                                <span><i class="wi wi-moonrise sun-moon-icon"></i> {{ formatTime($weatherData['sun'][$date]['moonrise'] ?? 'N/A') }}</span>
+                                <span><i class="wi wi-moonset sun-moon-icon"></i> {{ formatTime($weatherData['sun'][$date]['moonset'] ?? 'N/A') }}</span>
                                 <span>
                                     @php
                                         $moonPhase = $weatherData['sun'][$date]['moonphase'] ?? null;
