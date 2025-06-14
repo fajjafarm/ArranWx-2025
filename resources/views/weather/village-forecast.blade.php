@@ -568,38 +568,42 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Leaflet Map
-            const map = L.map('leaflet-map').setView([{{ $location->latitude }}, {{ $location->longitude }}], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+const map = L.map('leaflet-map').setView([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
 
-            // Current location pin
-            L.marker([{{ $location->latitude }}, {{ $location->longitude }}], {
-                icon: L.icon({
-                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34]
-                })
-            }).addTo(map)
-              .bindPopup('<b>{{ $location->name }}</b>')
-              .openPopup();
+// Invalidate size to fix rendering issues
+map.invalidateSize();
 
-            // Other locations pins
-            const locations = @json($locations);
-            locations.forEach(loc => {
-                if (loc.name !== '{{ $location->name }}') {
-                    const isMarine = loc.type === 'Marine';
-                    L.marker([loc.latitude, loc.longitude], {
-                        icon: L.icon({
-                            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34]
-                        })
-                    }).addTo(map)
-                      .bindPopup(`<b><a href="${isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}'.replace(':name', loc.name)}">${loc.name}</a></b>`);
-                }
+// Current location pin
+L.marker([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], {
+    icon: L.icon({
+        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34]
+    })
+}).addTo(map)
+  .bindPopup('<b>{{ $location->name }}</b>')
+  .openPopup();
+
+// Other locations pins
+const locations = @json($locations);
+locations.forEach(loc => {
+    if (loc.name !== '{{ $location->name }}') {
+        const isMarine = loc.type === 'Marine';
+        L.marker([loc.latitude || 0, loc.longitude || 0], {
+            icon: L.icon({
+                iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34]
+            })
+        }).addTo(map)
+          .bindPopup(`<b><a href="${isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}'.replace(':name', loc.name)}">${loc.name}</a></b>`);
+    }
+});
             });
 
             // Charts
