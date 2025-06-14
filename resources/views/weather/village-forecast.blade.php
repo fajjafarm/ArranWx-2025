@@ -5,7 +5,7 @@
 @endsection
 
 @section('css')
-        @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
+    @vite(['node_modules/flatpickr/dist/flatpickr.min.css'])
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -101,6 +101,7 @@
             width: 100%;
             border-radius: 5px;
             margin-bottom: 10px;
+            z-index: 0;
         }
         @media (max-width: 768px) {
             .forecast-table {
@@ -561,153 +562,158 @@
 @endsection
 
 @section('scripts')
-    @vite(['resources/js/pages/dashboard-sales.js'])
-      <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Leaflet Map
-const map = L.map('leaflet-map').setView([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], 10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+            try {
+                // Leaflet Map
+                const map = L.map('leaflet-map').setView([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
 
-// Invalidate size to fix rendering issues
-map.invalidateSize();
+                map.invalidateSize();
 
-// Current location pin
-L.marker([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], {
-    icon: L.icon({
-        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34]
-    })
-}).addTo(map)
-  .bindPopup('<b>{{ $location->name }}</b>')
-  .openPopup();
+                L.marker([{{ $location->latitude ?? 0 }}, {{ $location->longitude ?? 0 }}], {
+                    icon: L.icon({
+                        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map)
+                  .bindPopup('<b>{{ addslashes($location->name) }}</b>')
+                  .openPopup();
 
-// Other locations pins
-const locations = @json($locations);
-locations.forEach(loc => {
-    if (loc.name !== '{{ $location->name }}') {
-        const isMarine = loc.type === 'Marine';
-        L.marker([loc.latitude || 0, loc.longitude || 0], {
-            icon: L.icon({
-                iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34]
-            })
-        }).addTo(map)
-          .bindPopup(`<b><a href="${isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}'.replace(':name', loc.name)}">${loc.name}</a></b>`);
-    }
-});
-            });
-
-            // Charts
-            @if (!empty($weatherData['hourly']))
-                // Temperature Chart
-                const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-                new Chart(tempCtx, {
-                    type: 'line',
-                    data: {
-                        labels: [
-                            @foreach ($weatherData['hourly'] as $date => $hours)
-                                '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                            @endforeach
-                        ],
-                        datasets: [{
-                            label: 'Temperature (°C)',
-                            data: [
-                                @foreach ($weatherData['hourly'] as $date => $hours)
-                                    {{ $hours[0]['temperature'] ?? 'null' }},
-                                @endforeach
-                            ],
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { title: { display: true, text: 'Temperature (°C)' } },
-                            x: { title: { display: true, text: 'Date' } }
-                        },
-                        plugins: { legend: { display: true, position: 'top' } }
+                const locations = @json($locations->map(function($loc) {
+                    return [
+                        'name' => $loc->name,
+                        'latitude' => is_numeric($loc->latitude) ? $loc->latitude : null,
+                        'longitude' => is_numeric($loc->longitude) ? $loc->longitude : null,
+                        'type' => $loc->type
+                    ];
+                })->toArray());
+                locations.forEach(loc => {
+                    if (loc.name !== '{{ addslashes($location->name) }}' && loc.latitude && loc.longitude && !isNaN(loc.latitude) && !isNaN(loc.longitude)) {
+                        const isMarine = loc.type === 'Marine';
+                        const url = isMarine ? '{{ route('marine.show', ':name') }}' : '{{ route('location.show', ':name') }}';
+                        const safeName = encodeURIComponent(loc.name);
+                        L.marker([loc.latitude, loc.longitude], {
+                            icon: L.icon({
+                                iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34]
+                            })
+                        }).addTo(map)
+                          .bindPopup(`<b><a href="${url.replace(':name', safeName)}">${loc.name}</a></b>`);
                     }
                 });
 
-                // Rainfall Chart
-                const rainCtx = document.getElementById('rainfallChart').getContext('2d');
-                new Chart(rainCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: [
-                            @foreach ($weatherData['hourly'] as $date => $hours)
-                                '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                            @endforeach
-                        ],
-                        datasets: [{
-                            label: 'Rainfall Total (mm)',
-                            data: [
+                // Charts
+                @if (!empty($weatherData['hourly']))
+                    const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+                    new Chart(tempCtx, {
+                        type: 'line',
+                        data: {
+                            labels: [
                                 @foreach ($weatherData['hourly'] as $date => $hours)
-                                    {{ collect($hours)->sum('precipitation') }},
+                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
                                 @endforeach
                             ],
-                            backgroundColor: '#3498db',
-                            borderColor: '#2980b9',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { title: { display: true, text: 'Rainfall (mm)' }, beginAtZero: true },
-                            x: { title: { display: true, text: 'Date' } }
+                            datasets: [{
+                                label: 'Temperature (°C)',
+                                data: [
+                                    @foreach ($weatherData['hourly'] as $date => $hours)
+                                        {{ $hours[0]['temperature'] ?? 'null' }},
+                                    @endforeach
+                                ],
+                                borderColor: '#e74c3c',
+                                backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                                fill: true,
+                                tension: 0.4
+                            }]
                         },
-                        plugins: { legend: { display: true, position: 'top' } }
-                    }
-                });
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { title: { display: true, text: 'Temperature (°C)' } },
+                                x: { title: { display: true, text: 'Date' } }
+                            },
+                            plugins: { legend: { display: true, position: 'top' } }
+                        }
+                    });
 
-                // Wind Gust Chart
-                const gustCtx = document.getElementById('windGustChart').getContext('2d');
-                new Chart(gustCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: [
-                            @foreach ($weatherData['hourly'] as $date => $hours)
-                                '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
-                            @endforeach
-                        ],
-                        datasets: [{
-                            label: 'Peak Wind Gust (m/s)',
-                            data: [
+                    const rainCtx = document.getElementById('rainfallChart').getContext('2d');
+                    new Chart(rainCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: [
                                 @foreach ($weatherData['hourly'] as $date => $hours)
-                                    {{ collect($hours)->max('wind_gust') ?? 'null' }},
+                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
                                 @endforeach
                             ],
-                            backgroundColor: '#2ecc71',
-                            borderColor: '#27ae60',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { title: { display: true, text: 'Wind Gust (m/s)' }, beginAtZero: true },
-                            x: { title: { display: true, text: 'Date' } }
+                            datasets: [{
+                                label: 'Rainfall Total (mm)',
+                                data: [
+                                    @foreach ($weatherData['hourly'] as $date => $hours)
+                                        {{ collect($hours)->sum('precipitation') }},
+                                    @endforeach
+                                ],
+                                backgroundColor: '#3498db',
+                                borderColor: '#2980b9',
+                                borderWidth: 1
+                            }]
                         },
-                        plugins: { legend: { display: true, position: 'top' } }
-                    }
-                });
-            @endif
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { title: { display: true, text: 'Rainfall (mm)' }, beginAtZero: true },
+                                x: { title: { display: true, text: 'Date' } }
+                            },
+                            plugins: { legend: { display: true, position: 'top' } }
+                        }
+                    });
+
+                    const gustCtx = document.getElementById('windGustChart').getContext('2d');
+                    new Chart(gustCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: [
+                                @foreach ($weatherData['hourly'] as $date => $hours)
+                                    '{{ \Carbon\Carbon::parse($date)->format('M d') }}',
+                                @endforeach
+                            ],
+                            datasets: [{
+                                label: 'Peak Wind Gust (m/s)',
+                                data: [
+                                    @foreach ($weatherData['hourly'] as $date => $hours)
+                                        {{ collect($hours)->max('wind_gust') ?? 'null' }},
+                                    @endforeach
+                                ],
+                                backgroundColor: '#2ecc71',
+                                borderColor: '#27ae60',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { title: { display: true, text: 'Wind Gust (m/s)' }, beginAtZero: true },
+                                x: { title: { display: true, text: 'Date' } }
+                            },
+                            plugins: { legend: { display: true, position: 'top' } }
+                        }
+                    });
+                @endif
+            } catch (e) {
+                console.error('Error initializing map or charts:', e);
+            }
         });
     </script>
 @endsection
