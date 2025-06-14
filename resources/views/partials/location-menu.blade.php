@@ -30,8 +30,8 @@
                 </ul>
 <ul class="sub-menu">
     @php
-        // Filter locations to include only those with type 'Marine'
-        $marineLocations = $locations->filter(fn($location) => $location->type === 'Marine');
+        // Filter locations to include only those with type 'marine'
+        $marineLocations = $locations->filter(fn($location) => $location->type === 'marine');
     @endphp
     @if ($marineLocations->isNotEmpty())
         @foreach ($marineLocations as $location)
