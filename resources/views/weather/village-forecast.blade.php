@@ -624,100 +624,107 @@
                 });
 
                 // Charts
+                @php
+                    $chartLabels = [];
+                    $tempData = [];
+                    $rainData = [];
+                    $gustData = [];
+                    if (!empty($weatherData['hourly'])) {
+                        foreach ($weatherData['hourly'] as $date => $hours) {
+                            $chartLabels[] = \Carbon\Carbon::parse($date)->format('M d');
+                            $tempData[] = isset($hours[0]['temperature']) ? $hours[0]['temperature'] : null;
+                            $rainData[] = collect($hours)->sum('precipitation');
+                            $gustData[] = collect($hours)->max('wind_gust') ?? null;
+                        }
+                    }
+                @endphp
                 @if (!empty($weatherData['hourly']))
                     console.log('Initializing charts');
-                    const chartLabels = [@foreach ($weatherData['hourly'] as $date => $hours)
-                        '{{ \Carbon\Carbon::parse($date)->format('M d') }}'@if (!$loop->last),@endif
-                    @endforeach];
+                    const chartLabels = @json($chartLabels);
+                    const tempData = @json($tempData);
+                    const rainData = @json($rainData);
+                    const gustData = @json($gustData);
                     console.log('Chart labels:', chartLabels);
-
-                    const tempData = [@foreach ($weatherData['hourly'] as $date => $hours)
-                        {{ $hours[0]['temperature'] ?? 'null' }}@if (!$loop->last),@endif
-                    @endforeach];
                     console.log('Temperature data:', tempData);
-
-                    const rainData = [@foreach ($weatherData['hourly'] as $date => $hours)
-                        {{ collect($hours)->sum('precipitation') }}@if (!$loop->last),@endif
-                    @endforeach];
                     console.log('Rainfall data:', rainData);
-
-                    const gustData = [@foreach ($weatherData['hourly'] as $date => $hours)
-                        {{ collect($hours)->max('wind_gust') ?? 'null' }}@if (!$loop->last),@endif
-                    @endforeach];
                     console.log('Wind gust data:', gustData);
 
-                    const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-                    new Chart(tempCtx, {
-                        type: 'line',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [{
-                                label: 'Temperature (°C)',
-                                data: tempData,
-                                borderColor: '#e74c3c',
-                                backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { title: { display: true, text: 'Temperature (°C)' } },
-                                x: { title: { display: true, text: 'Date' } }
+                    if (chartLabels.length === 0) {
+                        console.warn('No chart data available');
+                    } else {
+                        const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+                        new Chart(tempCtx, {
+                            type: 'line',
+                            data: {
+                                labels: chartLabels,
+                                datasets: [{
+                                    label: 'Temperature (°C)',
+                                    data: tempData,
+                                    borderColor: '#e74c3c',
+                                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                                    fill: true,
+                                    tension: 0.4
+                                }]
                             },
-                            plugins: { legend: { display: true, position: 'top' } }
-                        }
-                    });
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { title: { display: true, text: 'Temperature (°C)' } },
+                                    x: { title: { display: true, text: 'Date' } }
+                                },
+                                plugins: { legend: { display: true, position: 'top' } }
+                            }
+                        });
 
-                    const rainCtx = document.getElementById('rainfallChart').getContext('2d');
-                    new Chart(rainCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [{
-                                label: 'Rainfall Total (mm)',
-                                data: rainData,
-                                backgroundColor: '#3498db',
-                                borderColor: '#2980b9',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { title: { display: true, text: 'Rainfall (mm)' }, beginAtZero: true },
-                                x: { title: { display: true, text: 'Date' } }
+                        const rainCtx = document.getElementById('rainfallChart').getContext('2d');
+                        new Chart(rainCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: chartLabels,
+                                datasets: [{
+                                    label: 'Rainfall Total (mm)',
+                                    data: rainData,
+                                    backgroundColor: '#3498db',
+                                    borderColor: '#2980b9',
+                                    borderWidth: 1
+                                }]
                             },
-                            plugins: { legend: { display: true, position: 'top' } }
-                        }
-                    });
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { title: { display: true, text: 'Rainfall (mm)' }, beginAtZero: true },
+                                    x: { title: { display: true, text: 'Date' } }
+                                },
+                                plugins: { legend: { display: true, position: 'top' } }
+                            }
+                        });
 
-                    const gustCtx = document.getElementById('windGustChart').getContext('2d');
-                    new Chart(gustCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [{
-                                label: 'Peak Wind Gust (m/s)',
-                                data: gustData,
-                                backgroundColor: '#2ecc71',
-                                borderColor: '#27ae60',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { title: { display: true, text: 'Wind Gust (m/s)' }, beginAtZero: true },
-                                x: { title: { display: true, text: 'Date' } }
+                        const gustCtx = document.getElementById('windGustChart').getContext('2d');
+                        new Chart(gustCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: chartLabels,
+                                datasets: [{
+                                    label: 'Peak Wind Gust (m/s)',
+                                    data: gustData,
+                                    backgroundColor: '#2ecc71',
+                                    borderColor: '#27ae60',
+                                    borderWidth: 1
+                                }]
                             },
-                            plugins: { legend: { display: true, position: 'top' } }
-                        }
-                    });
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { title: { display: true, text: 'Wind Gust (m/s)' }, beginAtZero: true },
+                                    x: { title: { display: true, text: 'Date' } }
+                                },
+                                plugins: { legend: { display: true, position: 'top' } }
+                            }
+                        });
+                    }
                 @endif
             } catch (e) {
                 console.error('Error initializing map or charts:', e);
