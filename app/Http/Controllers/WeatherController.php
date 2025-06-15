@@ -411,4 +411,4 @@ public function show(Request $request, $name)
         'locations' => $locations,
         'controller' => $this
     ]);
-}
+}}
