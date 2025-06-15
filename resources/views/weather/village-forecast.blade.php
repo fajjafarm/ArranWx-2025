@@ -549,33 +549,43 @@
                     $tempData = [];
                     $rainData = [];
                     $gustData = [];
+                    $maxDays = 7;
+                    $dayCount = 0;
+
                     if (!empty($weatherData['hourly']) && is_array($weatherData['hourly'])) {
                         foreach ($weatherData['hourly'] as $date => $hours) {
-                            if (!is_array($hours) || empty($hours) || !isset($hours[0]) || !is_array($hours[0])) {
-                                \Illuminate\Support\Facades\Log::warning("Invalid hourly data for date {$date}", ['hours' => $hours]);
+                            if ($dayCount >= $maxDays) {
+                                break;
+                            }
+                            if (!is_array($hours) || empty($hours) || !isset($hours[0]) || !is_array($hours[0]) || !isset($hours[0]['temperature']) || !is_numeric($hours[0]['temperature'])) {
+                                \Illuminate\Support\Facades\Log::warning("Skipping invalid hourly data for date {$date} in {$location->name}", ['hours' => $hours]);
                                 continue;
                             }
                             try {
                                 $chartLabels[] = \Carbon\Carbon::parse($date)->format('M d');
-                                $tempData[] = isset($hours[0]['temperature']) && is_numeric($hours[0]['temperature']) ? (float) $hours[0]['temperature'] : null;
+                                $tempData[] = (float) $hours[0]['temperature'];
                                 $rainData[] = collect($hours)->reduce(function ($sum, $hour) {
                                     return $sum + (isset($hour['precipitation']) && is_numeric($hour['precipitation']) ? (float) $hour['precipitation'] : 0);
                                 }, 0);
                                 $gustData[] = collect($hours)->reduce(function ($max, $hour) {
                                     $gust = isset($hour['wind_gust']) && is_numeric($hour['wind_gust']) ? (float) $hour['wind_gust'] : null;
                                     return $gust !== null && ($max === null || $gust > $max) ? $gust : $max;
-                                }, null);
+                                }, null) ?? 0;
+                                $dayCount++;
                             } catch (\Exception $e) {
-                                \Illuminate\Support\Facades\Log::error("Error processing hourly data for date {$date}", ['error' => $e->getMessage(), 'hours' => $hours]);
+                                \Illuminate\Support\Facades\Log::error("Error processing hourly data for date {$date} in {$location->name}", ['error' => $e->getMessage(), 'hours' => $hours]);
                                 continue;
                             }
                         }
+                        if ($dayCount < $maxDays) {
+                            \Illuminate\Support\Facades\Log::warning("Only {$dayCount} days of valid data for {$location->name}", ['dates' => array_keys($weatherData['hourly'])]);
+                        }
                     } else {
-                        \Illuminate\Support\Facades\Log::warning('Empty or invalid hourly weather data', ['hourly' => $weatherData['hourly'] ?? 'undefined']);
+                        \Illuminate\Support\Facades\Log::warning("Empty or invalid hourly weather data for {$location->name}", ['hourly' => $weatherData['hourly'] ?? 'undefined']);
                     }
                 @endphp
                 @if (!empty($chartLabels))
-                    console.log('Initializing charts');
+                    console.log('Initializing charts with data for ' + @json(count($chartLabels)) + ' days');
                     try {
                         const chartLabels = @json($chartLabels, JSON_THROW_ON_ERROR);
                         const tempData = @json($tempData, JSON_THROW_ON_ERROR);
