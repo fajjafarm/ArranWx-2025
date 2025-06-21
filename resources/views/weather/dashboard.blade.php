@@ -122,6 +122,16 @@
         .weather-summary li:last-child {
             border-bottom: none;
         }
+        /* Custom marker styles */
+        .leaflet-marker-icon.village {
+            filter: hue-rotate(0deg) saturate(100%) brightness(80%) !important; /* Red */
+        }
+        .leaflet-marker-icon.hill {
+            filter: grayscale(100%) brightness(50%) !important; /* Gray */
+        }
+        .leaflet-marker-icon.marine {
+            filter: hue-rotate(210deg) saturate(100%) brightness(80%) !important; /* Blue */
+        }
         @media (max-width: 768px) {
             .forecast-table {
                 display: block;
@@ -174,6 +184,7 @@
         }
     </style>
 @endsection
+
 
 @section('content')
     @include('layouts.partials.page-title', ['subtitle' => 'Weather Overview', 'title' => 'Isle of Arran Weather Dashboard'])
