@@ -10,7 +10,7 @@ class WeatherService
     public function __construct()
     {
         $this->client = new Client([
-            'headers' => ['User-Agent' => 'ArranWeather/1.0'],
+            'headers' => ['User-Agent' => 'ArranWeather/2.0'],
         ]);
     }
 
