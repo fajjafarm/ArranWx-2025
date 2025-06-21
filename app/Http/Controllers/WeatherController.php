@@ -452,7 +452,7 @@ class WeatherController extends Controller
 
         Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
 
-        $view = 'weather.forecast';
+        $view = 'weather.village-forecast';
 
         return view($view, [
             'location' => $location,
