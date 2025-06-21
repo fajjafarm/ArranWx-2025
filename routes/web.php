@@ -17,7 +17,7 @@ use App\Http\Controllers\RoutingController;
 */
 
 // Specific routes
-Route::get('/', [WeatherController::class, 'index'])->name('weather.dashboard');
+Route::get('/', [WeatherController::class, 'index'])->name('dashboard');
 Route::get('/home', fn () => view('dashboards.index'))->name('home');
 Route::get('/warnings', [WeatherController::class, 'warnings'])->name('dashboard.warnings');
 Route::get('/location/{name}', [WeatherController::class, 'show'])->name('location.show');
