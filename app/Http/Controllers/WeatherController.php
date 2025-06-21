@@ -94,71 +94,69 @@ class WeatherController extends Controller
         ];
 
         // Cache locations for 24 hours in database
-        $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
-        if (!ApiCache::getCached('locations')) {
-            ApiCache::setCached('locations', $locations, 24 * 60); // 24 hours
-        }
-
-        $weatherData = [];
-
-        foreach ($locations as $location) {
-            $location = (object) $location; // Convert array to object for consistency
-            Log::info("Fetching weather data for {$location->name}");
-
-            // Cache weather data
-            $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
-            $weather = ApiCache::getCached($weatherCacheKey);
-            if (!$weather) {
-                $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
-                if (!empty($weather)) {
-                    ApiCache::setCached($weatherCacheKey, $weather, 60); // 1 hour
-                }
-            }
-            Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
-            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
-                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
-                : [];
-
-            $marine = null;
-            if ($location->type === 'Marine') {
-                Log::info("Fetching marine data for {$location->name}");
-                $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
-                $marineResponse = ApiCache::getCached($marineCacheKey);
-                if (!$marineResponse) {
-                    $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-                    if (!empty($marineResponse)) {
-                        ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
-                    }
-                }
-                Log::info("Raw marine data for {$location->name}", ['data' => $marineResponse]);
-                if ($marineResponse) {
-                    $marine = [
-                        'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
-                        'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
-                        'wave_period' => $marineResponse['hourly']['wave_period'][0] ?? null,
-                        'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][0] ?? null,
-                        'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][0] ?? null,
-                        'swell_wave_direction' => null,
-                        'swell_wave_period' => null,
-                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
-                    ];
-                }
-            }
-
-            $weatherData[$location->name] = [
-                'weather' => $weatherDetails,
-                'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
-                'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
-                'marine' => $marine,
-                'type' => $location->type,
-                'altitude' => $location->altitude ?? 0,
-            ];
-        }
-
-        Log::info("Weather data sent to dashboard view", ['weather_data' => $weatherData]);
-        return view('dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus',
-            'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
+         $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
+    if (!ApiCache::getCached('locations')) {
+        ApiCache::setCached('locations', $locations, 24 * 60); // 24 hours
     }
+
+    $weatherData = [];
+
+    foreach ($locations as $location) {
+        $location = (object) $location;
+        Log::info("Fetching weather data for {$location->name}");
+
+        $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
+        $weather = ApiCache::getCached($weatherCacheKey);
+        if (!$weather) {
+            $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
+            if (!empty($weather)) {
+                ApiCache::setCached($weatherCacheKey, $weather, 60); // 1 hour
+            }
+        }
+        Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
+        $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+            ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+            : [];
+
+        $next1Hour = isset($weather['properties']['timeseries'][0]['data']['next_1_hours'])
+            ? $weather['properties']['timeseries'][0]['data']['next_1_hours']['details']
+            : ['precipitation_amount' => 0];
+
+        $marine = null;
+        if ($location->type === 'Marine') {
+            $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
+            $marineResponse = ApiCache::getCached($marineCacheKey);
+            if (!$marineResponse) {
+                $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+                if (!empty($marineResponse)) {
+                    ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
+                }
+            }
+            if ($marineResponse) {
+                $marine = [
+                    'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
+                    'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
+                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
+                ];
+            }
+        }
+
+        $weatherData[$location->name] = [
+            'weather' => $weatherDetails,
+            'precipitation' => $next1Hour['precipitation_amount'] ?? 0,
+            'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
+            'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
+            'marine' => $marine,
+            'type' => $location->type,
+            'altitude' => $location->altitude ?? 0,
+            'latitude' => $location->latitude,
+            'longitude' => $location->longitude,
+        ];
+    }
+
+    Log::info("Weather data sent to dashboard view", ['weather_data' => $weatherData]);
+    return view('weather.dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus', 'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
+}
 
     public function show(Request $request, $name)
     {
