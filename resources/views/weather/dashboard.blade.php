@@ -336,7 +336,7 @@
                     icon: {{ $location['type'] === 'Village' ? 'villageIcon' : ($location['type'] === 'Hill' ? 'hillIcon' : 'marineIcon') }}
                 }).addTo(map)
                   .bindPopup(@json($popupContent))
-                  .on('click', function() { window.location.href = '{{ route('weather.show', ['name' => $location['name']]) }}'; });
+                  .on('click', function() { window.location.href = '{{ route('location.show', ['name' => $location['name']]) }}'; });
             @endforeach
         });
     </script>
