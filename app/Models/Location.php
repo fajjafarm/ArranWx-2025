@@ -38,7 +38,16 @@ class Location extends Model
         'latitude' => 'float',
         'longitude' => 'float',
         'altitude' => 'float',
-        'type' => 'string', // Enum: Village, Marine, Hill
+        'type' => 'string',
+    ];
+
+    /**
+     * The attributes that should be validated as enums.
+     *
+     * @var array
+     */
+    protected $enums = [
+        'type' => ['Village', 'Marine', 'Hill'],
     ];
 
     /**
@@ -56,5 +65,20 @@ class Location extends Model
     public function getTypeAttribute($value)
     {
         return ucfirst($value); // Capitalize for display (Village, Marine, Hill)
+    }
+
+    /**
+     * Validate the type attribute.
+     *
+     * @param string $value
+     * @return void
+     * @throws \InvalidArgumentException
+     */
+    public function setTypeAttribute($value)
+    {
+        if (!in_array($value, $this->enums['type'], true)) {
+            throw new \InvalidArgumentException("Invalid type value: {$value}. Must be one of: " . implode(', ', $this->enums['type']));
+        }
+        $this->attributes['type'] = $value;
     }
 }

@@ -7,7 +7,6 @@ use App\Models\Location;
 use App\Models\ApiCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class WeatherController extends Controller
@@ -40,17 +39,17 @@ class WeatherController extends Controller
             'metOffice' => [
                 'class' => 'weather-no-warning',
                 'text' => 'No Warnings',
-                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
+                'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
             ],
             'meteogram' => [
-                'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
-                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
+                'imageUrl' => 'https://api.met.no/weatherapi/nowcast/2.0/meteogram?lat=55.6&lon=-5.3', // Example for Arran
+                'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
             ],
             'sepaFlood' => [
                 'class' => 'weather-no-warning',
                 'text' => 'No Warnings',
-                'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
-            ]
+                'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
+            ],
         ];
 
         return response()->json($data);
@@ -61,102 +60,104 @@ class WeatherController extends Controller
         $brodickArdrossanStatus = [
             'class' => 'status-red',
             'text' => 'No Service',
-            'updated' => Carbon::create(2025, 1, 13, 5, 37, 0, 'GMT')->format('d M Y H:i')
+            'updated' => Carbon::create(2025, 1, 13, 5, 37, 0, 'Europe/London')->format('d M Y H:i'),
         ];
 
         $brodickTroonStatus = [
             'class' => 'status-amber',
             'text' => 'Disrupted',
-            'updated' => Carbon::create(2025, 3, 12, 12, 0, 0, 'GMT')->format('d M Y H:i')
+            'updated' => Carbon::create(2025, 3, 12, 12, 0, 0, 'Europe/London')->format('d M Y H:i'),
         ];
 
         $lochranzaClaonaigStatus = [
             'class' => 'status-green',
             'text' => 'Normal',
-            'updated' => Carbon::create(2025, 3, 10, 11, 47, 0, 'GMT')->format('d M Y H:i')
+            'updated' => Carbon::create(2025, 3, 10, 11, 47, 0, 'Europe/London')->format('d M Y H:i'),
         ];
 
         $metOfficeWarning = [
             'class' => 'weather-no-warning',
             'text' => 'No Warnings',
-            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
+            'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
         ];
 
         $meteogram = [
-            'imageUrl' => 'https://via.placeholder.com/580x100?text=Meteogram+Placeholder',
-            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
+            'imageUrl' => 'https://api.met.no/weatherapi/nowcast/2.0/meteogram?lat=55.6&lon=-5.3',
+            'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
         ];
 
         $sepaFloodWarning = [
             'class' => 'weather-no-warning',
             'text' => 'No Warnings',
-            'updated' => Carbon::now('UTC')->format('Y-m-d H:i')
+            'updated' => Carbon::now('Europe/London')->format('Y-m-d H:i'),
         ];
 
-        // Cache locations for 24 hours in database
-         $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
-    if (!ApiCache::getCached('locations')) {
-        ApiCache::setCached('locations', $locations, 24 * 60); // 24 hours
-    }
-
-    $weatherData = [];
-
-    foreach ($locations as $location) {
-        $location = (object) $location;
-        Log::info("Fetching weather data for {$location->name}");
-
-        $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
-        $weather = ApiCache::getCached($weatherCacheKey);
-        if (!$weather) {
-            $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
-            if (!empty($weather)) {
-                ApiCache::setCached($weatherCacheKey, $weather, 60); // 1 hour
-            }
+        // Cache locations for 24 hours
+        $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
+        if (!ApiCache::getCached('locations')) {
+            ApiCache::setCached('locations', $locations, 24 * 60); // 24 hours
         }
-        Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
-        $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
-            ? $weather['properties']['timeseries'][0]['data']['instant']['details']
-            : [];
 
-        $next1Hour = isset($weather['properties']['timeseries'][0]['data']['next_1_hours'])
-            ? $weather['properties']['timeseries'][0]['data']['next_1_hours']['details']
-            : ['precipitation_amount' => 0];
+        $weatherData = [];
 
-        $marine = null;
-        if ($location->type === 'Marine') {
-            $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
-            $marineResponse = ApiCache::getCached($marineCacheKey);
-            if (!$marineResponse) {
-                $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
-                if (!empty($marineResponse)) {
-                    ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
+        foreach ($locations as $location) {
+            $location = (object) $location;
+            Log::info("Fetching weather data for {$location->name}");
+
+            $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
+            $weather = ApiCache::getCached($weatherCacheKey);
+            if (!$weather) {
+                $weather = $this->weatherService->getWeather($location->latitude, $location->longitude);
+                if (!empty($weather)) {
+                    ApiCache::setCached($weatherCacheKey, $weather, 60); // 1 hour
                 }
             }
-            if ($marineResponse) {
-                $marine = [
-                    'wave_height' => $marineResponse['hourly']['wave_height'][0] ?? null,
-                    'wave_direction' => $marineResponse['hourly']['wave_direction'][0] ?? null,
-                    'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][0] ?? null,
-                ];
+            Log::info("Raw weather data for {$location->name}", ['data' => $weather]);
+
+            $weatherDetails = isset($weather['properties']['timeseries'][0]['data']['instant']['details'])
+                ? $weather['properties']['timeseries'][0]['data']['instant']['details']
+                : [];
+
+            $next1Hour = isset($weather['properties']['timeseries'][0]['data']['next_1_hours'])
+                ? $weather['properties']['timeseries'][0]['data']['next_1_hours']['details']
+                : ['precipitation_amount' => 0];
+
+            $marine = null;
+            if ($location->type === 'Marine') {
+                $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
+                $marineResponse = ApiCache::getCached($marineCacheKey);
+                if (!$marineResponse) {
+                    $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+                    if (!empty($marineResponse)) {
+                        ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
+                    }
+                }
+                if ($marineResponse && isset($marineResponse['properties']['timeseries'][0]['data']['instant']['details'])) {
+                    $marineDetails = $marineResponse['properties']['timeseries'][0]['data']['instant']['details'];
+                    $marine = [
+                        'wave_height' => $marineDetails['sea_water_wave_height'] ?? null,
+                        'wave_direction' => $marineDetails['sea_water_wave_from_direction'] ?? null,
+                        'sea_surface_temperature' => $marineDetails['sea_surface_temperature'] ?? null,
+                    ];
+                }
             }
+
+            $weatherData[$location->name] = [
+                'weather' => $weatherDetails,
+                'precipitation' => $next1Hour['precipitation_amount'] ?? 0,
+                'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
+                'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
+                'marine' => $marine,
+                'type' => $location->type,
+                'altitude' => $location->altitude ?? 0,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude,
+            ];
         }
 
-        $weatherData[$location->name] = [
-            'weather' => $weatherDetails,
-            'precipitation' => $next1Hour['precipitation_amount'] ?? 0,
-            'wind_direction' => $this->degreesToCardinal($weatherDetails['wind_from_direction'] ?? null),
-            'wind_from_direction_degrees' => $weatherDetails['wind_from_direction'] ?? null,
-            'marine' => $marine,
-            'type' => $location->type,
-            'altitude' => $location->altitude ?? 0,
-            'latitude' => $location->latitude,
-            'longitude' => $location->longitude,
-        ];
+        Log::info("Weather data sent to dashboard view", ['weather_data' => $weatherData]);
+        return view('weather.dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus', 'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
     }
-
-    Log::info("Weather data sent to dashboard view", ['weather_data' => $weatherData]);
-    return view('weather.dashboard', compact('weatherData', 'locations', 'brodickArdrossanStatus', 'brodickTroonStatus', 'lochranzaClaonaigStatus', 'metOfficeWarning', 'meteogram', 'sepaFloodWarning'));
-}
 
     public function show(Request $request, $name)
     {
@@ -171,13 +172,13 @@ class WeatherController extends Controller
             Log::warning("Location type mismatch for {$location->name}", [
                 'location_type' => $location->type,
                 'expected_types' => $expectedType,
-                'route_uri' => $routeUri
+                'route_uri' => $routeUri,
             ]);
             abort(404, 'Location type does not match the requested forecast type.');
         }
 
         Log::info("Fetching weather data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
-        
+
         // Cache weather data
         $weatherCacheKey = "weather_{$location->latitude}_{$location->longitude}";
         $weather = ApiCache::getCached($weatherCacheKey);
@@ -194,7 +195,6 @@ class WeatherController extends Controller
             $currentWeather = [];
             $hourlyData = [];
         } else {
-            // Log timeseries duration
             $timeseries = $weather['properties']['timeseries'];
             $firstTime = Carbon::parse($timeseries[0]['time'])->setTimezone('Europe/London');
             $lastTime = Carbon::parse(end($timeseries)['time'])->setTimezone('Europe/London');
@@ -232,7 +232,7 @@ class WeatherController extends Controller
                 'heavysleet' => 'sleet',
                 'thunder' => 'thunder',
                 'rainandthunder' => 'rainandthunder',
-                'snowandthunder' => 'snowandthunder'
+                'snowandthunder' => 'snowandthunder',
             ];
 
             foreach ($timeseries as $entry) {
@@ -304,19 +304,16 @@ class WeatherController extends Controller
             if (!$sunMoon) {
                 $sunMoon = $this->weatherService->getSunriseSunset($location->latitude, $location->longitude, $date);
                 if (!empty($sunMoon)) {
-                    ApiCache::setCached($sunMoonCacheKey, $sunMoon, 24 * 60); // 24 hours for sun/moon (data doesn't change frequently)
+                    ApiCache::setCached($sunMoonCacheKey, $sunMoon, 24 * 60); // 24 hours
                 }
             }
-            $moonPhase = isset($sunMoon['moonphase']) && is_numeric($sunMoon['moonphase']) ? $sunMoon['moonphase'] : null;
-            if ($moonPhase !== null && $moonPhase > 1) {
-                $moonPhase = $moonPhase / 360;
-            }
+            $moonPhase = isset($sunMoon['moonphase']) && is_numeric($sunMoon['moonphase']) ? $sunMoon['moonphase'] / 360 : null;
             $sunMoonData[$date] = [
-                'sunrise' => isset($sunMoon['sunrise']) && $sunMoon['sunrise'] !== 'N/A' ? $sunMoon['sunrise'] : null,
-                'sunset' => isset($sunMoon['sunset']) && $sunMoon['sunset'] !== 'N/A' ? $sunMoon['sunset'] : null,
-                'moonrise' => isset($sunMoon['moonrise']) && $sunMoon['moonrise'] !== 'N/A' ? $sunMoon['moonrise'] : null,
-                'moonset' => isset($sunMoon['moonset']) && $sunMoon['moonset'] !== 'N/A' ? $sunMoon['moonset'] : null,
-                'moonphase' => $moonPhase
+                'sunrise' => $sunMoon['sunrise'] ?? null,
+                'sunset' => $sunMoon['sunset'] ?? null,
+                'moonrise' => $sunMoon['moonrise'] ?? null,
+                'moonset' => $sunMoon['moonset'] ?? null,
+                'moonphase' => $moonPhase,
             ];
             if (in_array(null, [$sunMoonData[$date]['sunrise'], $sunMoonData[$date]['sunset'], $sunMoonData[$date]['moonrise'], $sunMoonData[$date]['moonset']], true)) {
                 Log::warning("Missing or invalid sun/moon data for {$location->name} on {$date}", ['sun_moon' => $sunMoon]);
@@ -327,8 +324,8 @@ class WeatherController extends Controller
         $marine = null;
         $marineForecast = [];
         $marineHourly = [];
-        $marineApiUrl = null;
         $dailyMarineData = [];
+        $marineApiUrl = null;
         if ($location->type === 'Marine') {
             Log::info("Fetching marine data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
             try {
@@ -336,21 +333,15 @@ class WeatherController extends Controller
                 $isBst = $currentDate->isDST();
                 $apiTimezone = $isBst ? 'Europe/London' : 'GMT';
 
-                $marineApiUrl = 'https://marine-api.open-meteo.com/v1/marine?' . http_build_query([
-                    'latitude' => $location->latitude,
-                    'longitude' => $location->longitude,
-                    'hourly' => 'wave_height,sea_surface_temperature,sea_level_height_msl,wave_direction,wave_period,wind_wave_height,swell_wave_height',
-                    'daily' => 'wave_height_max,wind_wave_height_max,swell_wave_height_max,wave_direction_dominant,wind_wave_direction_dominant',
-                    'wind_speed_unit' => 'mph',
-                    'timezone' => $apiTimezone,
-                    'past_days' => 0,
-                    'forecast_days' => 10 // Extended to 10 days
+                $marineApiUrl = $this->baseUrl . 'oceanforecast/2.0/complete?' . http_build_query([
+                    'lat' => $location->latitude,
+                    'lon' => $location->longitude,
                 ]);
 
                 $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
                 $marineResponse = ApiCache::getCached($marineCacheKey);
                 if (!$marineResponse) {
-                    $marineResponse = Http::get($marineApiUrl)->json();
+                    $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
                     if (!empty($marineResponse)) {
                         ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
                     }
@@ -358,70 +349,65 @@ class WeatherController extends Controller
 
                 Log::info("Raw marine data for {$location->name}", ['url' => $marineApiUrl, 'data' => $marineResponse]);
 
-                if (!isset($marineResponse['hourly'], $marineResponse['daily'])) {
-                    Log::warning("Invalid marine response for {$location->name}, using fallback JSON", ['response' => $marineResponse]);
-                    $marineResponse = json_decode('{"latitude":54.541664,"longitude":10.2083435,"current":{"time":"2025-06-12T18:00","interval":3600,"wave_height":0.24,"swell_wave_height":0.10,"sea_level_height_msl":-0.54,"sea_surface_temperature":14.3,"wave_period":2.45,"wave_direction":232},"hourly":{"time":["2025-06-12T00:00",...,"2025-06-21T23:00"],"wave_height":[0.22,...,0.20],"sea_surface_temperature":[14.2,...,15.4],"sea_level_height_msl":[-0.20,...,-0.29],"wave_direction":[222,...,275],"wave_period":[2.10,...,2.25],"wind_wave_height":[0.20,...,0.14],"swell_wave_height":[0.10,...,0.14]},"daily":{"time":["2025-06-12","2025-06-13","2025-06-14","2025-06-15","2025-06-16","2025-06-17","2025-06-18","2025-06-19","2025-06-20","2025-06-21"],"wave_height_max":[0.60,0.44,0.38,0.62,0.32,0.26,0.36,0.40,0.45,0.50],"wind_wave_height_max":[0.58,0.42,0.34,0.60,0.32,0.24,0.36,0.38,0.43,0.48],"swell_wave_height_max":[0.16,0.22,0.26,0.20,0.14,0.14,0.14,0.18,0.20,0.22],"wave_direction_dominant":[206,284,283,266,259,163,262,270,275,280],"wind_wave_direction_dominant":[204,280,260,264,253,224,253,265,270,275]}}', true);
-                }
-
-                if ($marineResponse && isset($marineResponse['hourly'], $marineResponse['daily'])) {
-                    $currentHourIndex = $currentDate->hour;
-                    if ($isBst) {
-                        $currentHourIndex -= 1; // Adjust for BST
-                    }
+                if ($marineResponse && isset($marineResponse['properties']['timeseries'])) {
+                    $marineTimeseries = $marineResponse['properties']['timeseries'];
                     $marine = [
-                        'wave_height' => $marineResponse['current']['wave_height'] ?? null,
-                        'wave_direction' => $marineResponse['hourly']['wave_direction'][$currentHourIndex] ?? null,
-                        'wave_period' => $marineResponse['hourly']['wave_period'][$currentHourIndex] ?? null,
-                        'wind_wave_height' => $marineResponse['hourly']['wind_wave_height'][$currentHourIndex] ?? null,
-                        'swell_wave_height' => $marineResponse['hourly']['swell_wave_height'][$currentHourIndex] ?? null,
-                        'swell_wave_direction' => null,
-                        'swell_wave_period' => null,
-                        'sea_surface_temperature' => $marineResponse['hourly']['sea_surface_temperature'][$currentHourIndex] ?? null,
-                        'sea_level_height_msl' => $marineResponse['hourly']['sea_level_height_msl'][$currentHourIndex] ?? null,
+                        'wave_height' => $marineTimeseries[0]['data']['instant']['details']['sea_water_wave_height'] ?? null,
+                        'wave_direction' => $marineTimeseries[0]['data']['instant']['details']['sea_water_wave_from_direction'] ?? null,
+                        'wave_period' => $marineTimeseries[0]['data']['instant']['details']['sea_water_wave_period'] ?? null,
+                        'wind_wave_height' => $marineTimeseries[0]['data']['instant']['details']['wind_wave_height'] ?? null,
+                        'swell_wave_height' => $marineTimeseries[0]['data']['instant']['details']['swell_wave_height'] ?? null,
+                        'swell_wave_direction' => $marineTimeseries[0]['data']['instant']['details']['swell_wave_from_direction'] ?? null,
+                        'swell_wave_period' => $marineTimeseries[0]['data']['instant']['details']['swell_wave_period'] ?? null,
+                        'sea_surface_temperature' => $marineTimeseries[0]['data']['instant']['details']['sea_surface_temperature'] ?? null,
+                        'sea_level_height_msl' => $marineTimeseries[0]['data']['instant']['details']['sea_level_height'] ?? null,
                     ];
 
-                    $marineForecast = array_map(function ($time, $wave_height_max) {
-                        return [
-                            'date' => $time,
-                            'wave_height_max' => $wave_height_max,
-                        ];
-                    }, array_slice($marineResponse['daily']['time'], 0, 10), array_slice($marineResponse['daily']['wave_height_max'], 0, 10));
+                    // Process hourly marine data (2-hourly for 10 days)
+                    foreach ($marineTimeseries as $entry) {
+                        $time = Carbon::parse($entry['time'])->setTimezone('Europe/London');
+                        if ($time->minute === 0 && $time->hour % 2 === 0 && $time->diffInDays(Carbon::now('Europe/London')) <= 10) {
+                            $date = $time->toDateString();
+                            $details = $entry['data']['instant']['details'];
+                            $marineHourly[$date][] = [
+                                'time' => $time->format('H:i'),
+                                'wave_height' => $details['sea_water_wave_height'] ?? null,
+                                'sea_surface_temperature' => $details['sea_surface_temperature'] ?? null,
+                                'sea_level_height_msl' => $details['sea_level_height'] ?? null,
+                                'wave_direction' => $details['sea_water_wave_from_direction'] ?? null,
+                                'wave_period' => $details['sea_water_wave_period'] ?? null,
+                                'wind_wave_height' => $details['wind_wave_height'] ?? null,
+                                'swell_wave_height' => $details['swell_wave_height'] ?? null,
+                            ];
+                        }
+                    }
+                    $marineHourly = array_slice($marineHourly, 0, 10, true);
 
-                    $dailyMarineData = array_map(function ($time, $wave_height_max, $wind_wave_height_max, $swell_wave_height_max, $wave_direction_dominant, $wind_wave_direction_dominant) {
-                        return [
-                            'date' => $time,
-                            'wave_height_max' => $wave_height_max,
-                            'wind_wave_height_max' => $wind_wave_height_max,
-                            'swell_wave_height_max' => $swell_wave_height_max,
-                            'wave_direction_dominant' => $wave_direction_dominant,
-                            'wind_wave_direction_dominant' => $wind_wave_direction_dominant,
+                    // Daily marine data (aggregate max values)
+                    $dailyMarineData = [];
+                    foreach (array_keys($marineHourly) as $date) {
+                        $dayData = $marineHourly[$date];
+                        $maxWaveHeight = max(array_column($dayData, 'wave_height') ?: [0]);
+                        $maxWindWaveHeight = max(array_column($dayData, 'wind_wave_height') ?: [0]);
+                        $maxSwellWaveHeight = max(array_column($dayData, 'swell_wave_height') ?: [0]);
+                        $dominantWaveDirection = $dayData[0]['wave_direction'] ?? null;
+                        $dominantWindWaveDirection = $dayData[0]['wind_wave_height'] ? ($dayData[0]['wave_direction'] ?? null) : null;
+                        $dailyMarineData[$date] = [
+                            'date' => $date,
+                            'wave_height_max' => $maxWaveHeight,
+                            'wind_wave_height_max' => $maxWindWaveHeight,
+                            'swell_wave_height_max' => $maxSwellWaveHeight,
+                            'wave_direction_dominant' => $dominantWaveDirection,
+                            'wind_wave_direction_dominant' => $dominantWindWaveDirection,
                         ];
-                    }, array_slice($marineResponse['daily']['time'], 0, 10),
-                       array_slice($marineResponse['daily']['wave_height_max'], 0, 10),
-                       array_slice($marineResponse['daily']['wind_wave_height_max'], 0, 10),
-                       array_slice($marineResponse['daily']['swell_wave_height_max'], 0, 10),
-                       array_slice($marineResponse['daily']['wave_direction_dominant'], 0, 10),
-                       array_slice($marineResponse['daily']['wind_wave_direction_dominant'], 0, 10));
+                    }
 
-                    $marineHourly = array_map(function ($time, $wave_height, $sea_surface_temperature, $sea_level_height_msl, $wave_direction, $wave_period, $wind_wave_height, $swell_wave_height) {
+                    $marineForecast = array_map(function ($data) {
                         return [
-                            'time' => $time,
-                            'wave_height' => $wave_height,
-                            'sea_surface_temperature' => $sea_surface_temperature,
-                            'sea_level_height_msl' => $sea_level_height_msl,
-                            'wave_direction' => $wave_direction,
-                            'wave_period' => $wave_period,
-                            'wind_wave_height' => $wind_wave_height,
-                            'swell_wave_height' => $swell_wave_height,
+                            'date' => $data['date'],
+                            'wave_height_max' => $data['wave_height_max'],
                         ];
-                    }, array_slice($marineResponse['hourly']['time'], 0, 240), // 10 days * 24 hours
-                       array_slice($marineResponse['hourly']['wave_height'], 0, 240),
-                       array_slice($marineResponse['hourly']['sea_surface_temperature'], 0, 240),
-                       array_slice($marineResponse['hourly']['sea_level_height_msl'], 0, 240),
-                       array_slice($marineResponse['hourly']['wave_direction'], 0, 240),
-                       array_slice($marineResponse['hourly']['wave_period'], 0, 240),
-                       array_slice($marineResponse['hourly']['wind_wave_height'], 0, 240),
-                       array_slice($marineResponse['hourly']['swell_wave_height'], 0, 240));
+                    }, array_values($dailyMarineData));
                 } else {
                     Log::error("Invalid marine response for {$location->name}", ['url' => $marineApiUrl, 'response' => $marineResponse]);
                 }
@@ -440,7 +426,7 @@ class WeatherController extends Controller
             'daily_marine_data' => $dailyMarineData,
             'type' => $location->type,
             'altitude' => $location->altitude ?? 0,
-            'marine_api_url' => $marineApiUrl
+            'marine_api_url' => $marineApiUrl,
         ];
 
         $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
@@ -450,13 +436,65 @@ class WeatherController extends Controller
 
         Log::info("Weather data sent to view for {$location->name}", ['weatherData' => $weatherData]);
 
-        $view = 'weather.village-forecast';
+        $view = $location->type === 'Marine' ? 'weather.marine-forecast' : 'weather.village-forecast';
 
         return view($view, [
             'location' => $location,
             'weatherData' => $weatherData,
             'locations' => collect($locations),
-            'controller' => $this
+            'controller' => $this,
         ]);
     }
+    public function tide(Request $request, $name)
+{
+    $location = Location::where('name', $name)->firstOrFail();
+
+    if ($location->type !== 'Marine') {
+        Log::warning("Tide forecast requested for non-marine location: {$location->name}");
+        abort(404, 'Tide forecasts are only available for marine locations.');
+    }
+
+    Log::info("Fetching tide data for {$location->name}", ['lat' => $location->latitude, 'lon' => $location->longitude]);
+
+    $marineCacheKey = "marine_{$location->latitude}_{$location->longitude}";
+    $marineResponse = ApiCache::getCached($marineCacheKey);
+    if (!$marineResponse) {
+        $marineResponse = $this->weatherService->getMarineForecast($location->latitude, $location->longitude);
+        if (!empty($marineResponse)) {
+            ApiCache::setCached($marineCacheKey, $marineResponse, 60); // 1 hour
+        }
+    }
+
+    $tideData = ['hourly' => []];
+    if ($marineResponse && isset($marineResponse['properties']['timeseries'])) {
+        $timeseries = $marineResponse['properties']['timeseries'];
+        foreach ($timeseries as $entry) {
+            $time = Carbon::parse($entry['time'])->setTimezone('Europe/London');
+            if ($time->minute === 0 && $time->hour % 2 === 0 && $time->diffInDays(Carbon::now('Europe/London')) <= 7) {
+                $date = $time->toDateString();
+                $details = $entry['data']['instant']['details'];
+                $tideData['hourly'][$date][] = [
+                    'time' => $time->format('H:i'),
+                    'sea_level_height_msl' => $details['sea_level_height'] ?? null,
+                ];
+            }
+        }
+        $tideData['hourly'] = array_slice($tideData['hourly'], 0, 7, true); // 7 days
+        Log::info("Processed tide data for {$location->name}", ['days' => count($tideData['hourly'])]);
+    } else {
+        Log::error("Invalid marine response for {$location->name}", ['response' => $marineResponse]);
+    }
+
+    $locations = ApiCache::getCached('locations') ?? Location::all()->toArray();
+    if (!ApiCache::getCached('locations')) {
+        ApiCache::setCached('locations', $locations, 24 * 60); // 24 hours
+    }
+
+    return view('weather.tide-forecast', [
+        'location' => $location,
+        'tideData' => $tideData,
+        'locations' => collect($locations),
+        'controller' => $this,
+    ]);
+}
 }

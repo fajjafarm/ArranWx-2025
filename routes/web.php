@@ -32,7 +32,7 @@ Route::prefix('resources')->name('resources.')->group(function () {
     Route::get('/ship-mv-alfred', [ResourcesController::class, 'shipAlfred'])->name('ship-alfred');
     Route::get('/planes-over-arran', [ResourcesController::class, 'flightRadar'])->name('flight-radar');
     Route::get('/lightning-near-arran', [ResourcesController::class, 'lightning'])->name('lightning');
-    Route::get('/tides', [ResourcesController::class, 'tides'])->name('tides');
+    Route::get('/tide/{name}', [WeatherController::class, 'tide'])->name('tide.show');
     Route::get('/arran-webcams', [ResourcesController::class, 'webcams'])->name('webcams');
     Route::get('/aurora-borealis-northern-lights', [ResourcesController::class, 'aurora'])->name('aurora');
 });

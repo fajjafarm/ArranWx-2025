@@ -1,66 +1,174 @@
 <?php
+
 namespace App\Services;
 
-use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class WeatherService
 {
-    protected $client;
+    protected $baseUrl = 'https://api.met.no/weatherapi/';
+    protected $userAgent = 'ArranWeatherStation/1.0 (contact: your-email@example.com)';
 
-    public function __construct()
+    /**
+     * Fetch weather forecast from yr.no
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @return array|null
+     */
+    public function getWeather($latitude, $longitude)
     {
-        $this->client = new Client([
-            'headers' => ['User-Agent' => 'ArranWeather/2.0'],
-        ]);
-    }
-
-    public function getWeather($lat, $lon)
-    {
-        $url = "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat={$lat}&lon={$lon}";
         try {
-            $response = $this->client->get($url);
-            return json_decode($response->getBody(), true);
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            \Log::error("Weather API Error for lat={$lat}, lon={$lon}: " . $e->getMessage());
-            return [];
-        }
-    }
+            $url = $this->baseUrl . 'locationforecast/2.0/complete?' . http_build_query([
+                'lat' => $latitude,
+                'lon' => $longitude,
+            ]);
 
-    public function getMarineForecast($lat, $lon)
-    {
-        if (!is_numeric($lat) || !is_numeric($lon) || $lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
-            \Log::error("Invalid coordinates for marine forecast: lat={$lat}, lon={$lon}");
+            $response = Http::withHeaders([
+                'User-Agent' => $this->userAgent,
+                'Accept' => 'application/json',
+            ])->retry(3, 1000)->timeout(10)->get($url);
+
+            if (!$response->successful()) {
+                Log::error('yr.no weather API request failed', [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+            if (!isset($data['properties']['timeseries'])) {
+                Log::error('Invalid yr.no weather response', ['response' => $data]);
+                return null;
+            }
+
+            Log::info('Fetched weather data from yr.no', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'timeseries_count' => count($data['properties']['timeseries']),
+            ]);
+
+            return $data;
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch weather data from yr.no', [
+                'error' => $e->getMessage(),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ]);
             return null;
         }
+    }
 
-        $lat = round($lat, 4);
-        $lon = round($lon, 4);
-
+    /**
+     * Fetch marine forecast from yr.no
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @return array|null
+     */
+    public function getMarineForecast($latitude, $longitude)
+    {
         try {
-            $url = "https://marine-api.open-meteo.com/v1/marine?latitude={$lat}&longitude={$lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_surface_temperature&wind_speed_unit=mph";
-            $response = $this->client->get($url);
-            return json_decode($response->getBody(), true);
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            \Log::error("Marine API Error: " . $e->getMessage());
+            $url = $this->baseUrl . 'oceanforecast/2.0/complete?' . http_build_query([
+                'lat' => $latitude,
+                'lon' => $longitude,
+            ]);
+
+            $response = Http::withHeaders([
+                'User-Agent' => $this->userAgent,
+                'Accept' => 'application/json',
+            ])->retry(3, 1000)->timeout(10)->get($url);
+
+            if (!$response->successful()) {
+                Log::error('yr.no marine API request failed', [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+            if (!isset($data['properties']['timeseries'])) {
+                Log::error('Invalid yr.no marine response', ['response' => $data]);
+                return null;
+            }
+
+            Log::info('Fetched marine data from yr.no', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'timeseries_count' => count($data['properties']['timeseries']),
+            ]);
+
+            return $data;
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch marine data from yr.no', [
+                'error' => $e->getMessage(),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ]);
             return null;
         }
     }
 
-    public function getSunriseSunset($lat, $lon, $date)
+    /**
+     * Fetch sunrise/sunset and moon data
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @param string $date
+     * @return array
+     */
+    public function getSunriseSunset($latitude, $longitude, $date)
     {
-        $url = "https://api.met.no/weatherapi/sunrise/3.0/sun?lat={$lat}&lon={$lon}&date={$date}&offset=+00:00";
         try {
-            $response = $this->client->get($url);
-            $data = json_decode($response->getBody(), true);
-            return [
-                'sunrise' => $data['properties']['sunrise']['time'] ?? null,
-                'sunset' => $data['properties']['sunset']['time'] ?? null,
-                'moonrise' => $data['properties']['moonrise']['time'] ?? null,
-                'moonset' => $data['properties']['moonset']['time'] ?? null,
-            ];
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            \Log::error("Sunrise API Error: " . $e->getMessage());
-            return ['sunrise' => null, 'sunset' => null, 'moonrise' => null, 'moonset' => null];
+            $url = $this->baseUrl . 'sunrise/2.0/sun?' . http_build_query([
+                'lat' => $latitude,
+                'lon' => $longitude,
+                'date' => $date,
+                'offset' => '+01:00', // Adjust for BST/GMT
+            ]);
+
+            $response = Http::withHeaders([
+                'User-Agent' => $this->userAgent,
+                'Accept' => 'application/json',
+            ])->retry(3, 1000)->timeout(10)->get($url);
+
+            if (!$response->successful()) {
+                Log::error('yr.no sunrise API request failed', [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
+                return ['sunrise' => 'N/A', 'sunset' => 'N/A', 'moonrise' => 'N/A', 'moonset' => 'N/A', 'moonphase' => null];
+            }
+
+            $data = $response->json();
+            $sunrise = $data['properties']['sunrise']['time'] ?? 'N/A';
+            $sunset = $data['properties']['sunset']['time'] ?? 'N/A';
+            $moonrise = $data['properties']['moonrise']['time'] ?? 'N/A';
+            $moonset = $data['properties']['moonset']['time'] ?? 'N/A';
+            $moonphase = $data['properties']['moonphase'] ?? null;
+
+            Log::info('Fetched sun/moon data from yr.no', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'date' => $date,
+            ]);
+
+            return compact('sunrise', 'sunset', 'moonrise', 'moonset', 'moonphase');
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch sun/moon data from yr.no', [
+                'error' => $e->getMessage(),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'date' => $date,
+            ]);
+            return ['sunrise' => 'N/A', 'sunset' => 'N/A', 'moonrise' => 'N/A', 'moonset' => 'N/A', 'moonphase' => null];
         }
     }
 }
