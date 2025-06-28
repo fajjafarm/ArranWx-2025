@@ -98,7 +98,7 @@
                 </a>
             </li>
             <li class="side-nav-item">
-                <a href="{{ route('resources.tides') }}" class="side-nav-link">
+                <a href="{{ route('resources.tide') }}" class="side-nav-link">
                     <span>Tide Charts</span>
                 </a>
             </li>
