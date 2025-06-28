@@ -1,15 +1,27 @@
 <li class="side-nav-title">Weather Forecasts</li>
 
 @php
-    // Fetch locations and group by type, using cached data if available
-    $locations = \App\Models\ApiCache::getCached('locations') ?? \App\Models\Location::all()->groupBy('type')->map(function ($group) {
-        return $group->sortBy('name');
-    });
+    // Fetch locations and group by type, ensuring it's a Collection
+    $locations = \App\Models\ApiCache::getCached('locations');
+    if (is_array($locations)) {
+        $locations = collect($locations);
+    } else {
+        $locations = \App\Models\Location::all()->groupBy('type')->map(function ($group) {
+            return $group->sortBy('name');
+        });
+    }
     $types = ['Village', 'Hill', 'Marine'];
+
+    // Debug: Log the type and structure of $locations
+    \Illuminate\Support\Facades\Log::info('Locations data in location-menu', [
+        'type' => gettype($locations),
+        'is_collection' => $locations instanceof \Illuminate\Support\Collection,
+        'data' => $locations->toArray()
+    ]);
 @endphp
 
 @foreach ($types as $index => $type)
-    @if ($locations->has($type))
+    @if (collect($locations)->has($type))
         <li class="side-nav-item">
             <a data-bs-toggle="collapse" href="#sidebar{{ $type }}" aria-expanded="false" aria-controls="sidebar{{ $type }}" class="side-nav-link">
                 <i class="ti {{ $type === 'Village' ? 'ti-home' : ($type === 'Marine' ? 'ti-anchor' : 'ti-trekking') }}"></i>
@@ -90,11 +102,13 @@
                     <span>Tide Charts</span>
                 </a>
             </li>
-            <li class="side-nav-item">
-    <a href="{{ route('tide.show', $location->name) }}" class="side-nav-link">
-        <span>{{ $location->name }} Tide Forecast</span>
-    </a>
-</li>
+            @if (isset($location) && $location->name)
+                <li class="side-nav-item">
+                    <a href="{{ route('tide.show', $location->name) }}" class="side-nav-link">
+                        <span>{{ $location->name }} Tide Forecast</span>
+                    </a>
+                </li>
+            @endif
             <li class="side-nav-item">
                 <a href="{{ route('resources.webcams') }}" class="side-nav-link">
                     <span>Arran Webcams</span>
